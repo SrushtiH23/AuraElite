@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Aura - Bangalore's Premier Luxury Salon Finder & AI Concierge. Discover, compare, and book elite salon experiences at Ritz-Carlton, UB City, Leela Palace, and more.">
+  <title>AURA | Bangalore Luxury Salon Finder & AI Concierge</title>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Core Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  
+  <div class="app-container">
+    
+    <!-- Navigation Bar -->
+    <header class="navbar" id="mainNavbar">
+      <div class="nav-content">
+        <a href="#" class="logo-container" id="navLogo">
+          <div class="brand-logo">AURA <span>Elite</span></div>
+        </a>
+        
+        <ul class="nav-links">
+          <li><a href="#" class="nav-link active" data-target="explore-section">Explore Salons</a></li>
+          <li><a href="#" class="nav-link" data-target="ai-stylist-section">AI Style Advisor</a></li>
+          <li><a href="#" class="nav-link" data-target="compare-section">Compare Salons</a></li>
+          <li><a href="#" class="nav-link" data-target="bookings-section">My Bookings</a></li>
+        </ul>
+        
+        <div class="nav-actions">
+          <button class="btn btn-gold-outline btn-sm" id="viewMapBtn">
+            <i class="fa-solid fa-map-location-dot"></i> View Map
+          </button>
+          <button class="btn btn-primary btn-sm" id="navBookNowBtn">
+            Book Appointment
+          </button>
+        </div>
+      </div>
+    </header>
+    
+    <!-- Main Content Area -->
+    <main>
+      
+      <!-- HERO BANNER -->
+      <section class="hero-section" id="heroBanner">
+        <div class="hero-subtitle">Bangalore's Finest Grooming & Hair Spas</div>
+        <h1 class="hero-title">Experience Unrivaled Luxury Grooming</h1>
+        <p class="hero-description">
+          Discover handpicked salons of absolute distinction. Aura matches you with Bangalore's top stylists, premium therapies, and VIP treatments.
+        </p>
+        
+        <!-- Search and Filters -->
+        <div class="filter-search-container">
+          <div class="input-group">
+            <i class="fa-solid fa-magnifying-glass input-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search salons, services, or stylists...">
+          </div>
+          
+          <div class="input-group">
+            <i class="fa-solid fa-location-dot input-icon"></i>
+            <select id="areaFilter">
+              <option value="">All Locations</option>
+              <option value="UB City">UB City / Lavelle Rd</option>
+              <option value="Ashok Nagar">Ashok Nagar (Ritz / JW)</option>
+              <option value="Indiranagar">Indiranagar</option>
+              <option value="Old Airport Road">Old Airport Road (Leela)</option>
+              <option value="Koramangala">Koramangala</option>
+            </select>
+          </div>
+          
+          <div class="input-group">
+            <i class="fa-solid fa-scissors input-icon"></i>
+            <select id="categoryFilter">
+              <option value="">All Categories</option>
+              <option value="Hair Care">Hair Styling & Color</option>
+              <option value="Skin Care">Luxury Facials & Skin</option>
+              <option value="Spa Treatments">Spa & Body Massages</option>
+              <option value="Nails & Grooming">Nail Art & VIP Grooming</option>
+            </select>
+          </div>
+          
+          <button class="btn btn-primary" id="searchBtn">
+            <i class="fa-solid fa-sliders"></i> Filter
+          </button>
+        </div>
+        
+        <!-- Quick Recommendation Tags -->
+        <div class="quick-tags">
+          <button class="tag-btn active" data-val="">All Salons</button>
+          <button class="tag-btn" data-val="Italian Method">Italian Method Cut</button>
+          <button class="tag-btn" data-val="Balayage">Balayage Master</button>
+          <button class="tag-btn" data-val="Gold Facial">24k Gold Facial</button>
+          <button class="tag-btn" data-val="valet">Valet Parking</button>
+          <button class="tag-btn" data-val="champagne">Complimentary Champagne</button>
+        </div>
+      </section>
+      
+      
+      <!-- 1. EXPLORE SALONS PAGE -->
+      <section class="page-section active" id="explore-section">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title"><span>Curated Collections</span>Bangalore's Finest Salons</h2>
+            <p class="section-desc">Browse local branches of global luxury chains and ultra-exclusive hotel retreats.</p>
+          </div>
+          <div style="font-size: 0.9rem; color: var(--text-secondary);" id="salonCountLabel">
+            Showing 6 luxury establishments
+          </div>
+        </div>
+        
+        <!-- Salons Grid -->
+        <div class="salons-grid" id="salonsGrid">
+          <!-- Populated dynamically via JS -->
+          <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 12px; color: var(--accent-gold);"></i>
+            <p>Curating elite selections...</p>
+          </div>
+        </div>
+      </section>
+      
+      
+      <!-- 2. AI STYLE CONCIERGE PAGE -->
+      <section class="page-section" id="ai-stylist-section">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title"><span>Virtual Consultations</span>Aura AI Concierge</h2>
+            <p class="section-desc">Receive personalized hair care solutions, style recommendations, and immediate booking routes.</p>
+          </div>
+        </div>
+        
+        <div class="ai-stylist-container">
+          <!-- AI Profile Panel -->
+          <div class="ai-profile-panel">
+            <div class="ai-avatar-wrapper">
+              <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=150&auto=format&fit=crop" alt="Aura AI Consultant" class="ai-avatar">
+              <div class="ai-status-pulse"></div>
+            </div>
+            <h3 class="ai-name">Aura</h3>
+            <div class="ai-role">AI Hair & Style Advisor</div>
+            <p class="ai-tagline">
+              Specialized in matching hair types, face structures, and service budgets with Bangalore's leading master stylists.
+            </p>
+            
+            <div class="ai-quick-options">
+              <button class="ai-option-btn" data-trigger="haircut"><i class="fa-solid fa-wand-magic-sparkles"></i> Recommend a Haircut</button>
+              <button class="ai-option-btn" data-trigger="color"><i class="fa-solid fa-palette"></i> Find Hair Color Expert</button>
+              <button class="ai-option-btn" data-trigger="facial"><i class="fa-solid fa-sparkles"></i> VIP Skin Treatment Match</button>
+            </div>
+          </div>
+          
+          <!-- AI Chat Window -->
+          <div class="ai-chat-window">
+            <div class="ai-chat-header">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fa-solid fa-robot" style="color: var(--accent-gold);"></i>
+                <div style="font-weight: 600;">Live Consultation</div>
+              </div>
+              <button class="btn btn-secondary btn-sm" id="resetChatBtn" style="padding: 4px 10px; font-size: 0.75rem;">
+                <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+              </button>
+            </div>
+            
+            <!-- Chat history scroll area -->
+            <div class="chat-history" id="chatHistory">
+              <!-- Dialog starts dynamically in JS -->
+            </div>
+            
+            <!-- Input text area -->
+            <div class="ai-chat-input-bar">
+              <input type="text" id="chatInput" placeholder="Ask Aura about styles, salons, or available treatments...">
+              <button class="chat-send-btn" id="chatSendBtn">
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      
+      <!-- 3. COMPARE SALONS PAGE -->
+      <section class="page-section" id="compare-section">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title"><span>Granular Analysis</span>Salon Comparison Matrix</h2>
+            <p class="section-desc">Evaluate and contrast amenities, styling philosophies, master rates, and premium service selections side-by-side.</p>
+          </div>
+        </div>
+        
+        <div id="comparisonContainer">
+          <!-- Populated dynamically via JS -->
+          <div class="empty-bookings">
+            <div class="empty-bookings-icon"><i class="fa-solid fa-code-compare"></i></div>
+            <h3>No Salons Selected for Comparison</h3>
+            <p style="margin-bottom: 20px;">Go to the Explore Salons page and check "Compare" on your favorite salons to see their side-by-side comparison.</p>
+            <button class="btn btn-primary" onclick="document.querySelector('[data-target=\'explore-section\']').click()">
+              Go to Explore
+            </button>
+          </div>
+        </div>
+      </section>
+      
+      
+      <!-- 4. MY BOOKINGS PAGE -->
+      <section class="page-section" id="bookings-section">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title"><span>Your Appointments</span>My Active Bookings</h2>
+            <p class="section-desc">Manage your reservations, view booking QR passes, and read check-in details.</p>
+          </div>
+        </div>
+        
+        <div id="bookingsContainer">
+          <!-- Populated dynamically via JS (if empty, empty state will render) -->
+          <div class="empty-bookings">
+            <div class="empty-bookings-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+            <h3>No Active Appointments</h3>
+            <p style="margin-bottom: 20px;">Indulge in a premium salon service. Schedule your first appointment in seconds.</p>
+            <button class="btn btn-primary" id="bookFirstBtn">
+              Book Appointment Now
+            </button>
+          </div>
+        </div>
+      </section>
+      
+    </main>
+    
+    
+    <!-- FLOATING BOTTOM DOCK FOR COMPARISON -->
+    <div class="compare-drawer" id="compareDrawer">
+      <div class="compare-drawer-info">
+        <div class="compare-count-badge" id="compareCountBadge">0</div>
+        <div>
+          <div style="font-weight: 600; font-size: 0.9rem;">Salons Selected</div>
+          <div class="compare-drawer-thumbs" id="compareDrawerThumbs">
+            <!-- Thumbnail images added here -->
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary btn-sm" id="clearCompareBtn">Clear</button>
+        <button class="btn btn-primary btn-sm" id="compareNowBtn">Compare Matrix</button>
+      </div>
+    </div>
+    
+    
+    <!-- STEP-BY-STEP BOOKING MODAL -->
+    <div class="modal-overlay" id="bookingModal">
+      <div class="modal-container">
+        
+        <div class="modal-header">
+          <h3 class="modal-title" id="bookingModalTitle">Reserve Luxury Experience</h3>
+          <button class="modal-close-btn" id="closeBookingBtn">&times;</button>
+        </div>
+        
+        <!-- Step Navigation Progress Bar -->
+        <div style="padding: 24px 24px 0 24px;">
+          <div class="booking-steps-nav">
+            <div class="step-indicator active" data-step="1">
+              <span>1</span> Service
+            </div>
+            <div class="step-indicator" data-step="2">
+              <span>2</span> Stylist
+            </div>
+            <div class="step-indicator" data-step="3">
+              <span>3</span> Date & Time
+            </div>
+            <div class="step-indicator" data-step="4">
+              <span>4</span> Confirm
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-body">
+          
+          <!-- Step 1: Service Selection -->
+          <div class="booking-step-panel active" id="step1Panel">
+            <div style="margin-bottom: 16px; font-weight: 600; font-size: 1rem; color: var(--accent-gold);">
+              Select Salon and Service:
+            </div>
+            
+            <div class="input-group" style="margin-bottom: 16px;">
+              <i class="fa-solid fa-shop input-icon"></i>
+              <select id="modalSalonSelect" style="background: var(--bg-secondary);">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+            
+            <div class="service-select-list" id="modalServiceList">
+              <!-- Services generated dynamically based on selected salon -->
+            </div>
+          </div>
+          
+          <!-- Step 2: Stylist Selection -->
+          <div class="booking-step-panel" id="step2Panel">
+            <div style="margin-bottom: 16px; font-weight: 600; font-size: 1rem; color: var(--accent-gold);">
+              Select Your Master Stylist:
+            </div>
+            
+            <div class="stylist-select-list" id="modalStylistList">
+              <!-- Stylists generated dynamically -->
+            </div>
+          </div>
+          
+          <!-- Step 3: Date & Time Selection -->
+          <div class="booking-step-panel" id="step3Panel">
+            <div style="margin-bottom: 16px; font-weight: 600; font-size: 1rem; color: var(--accent-gold);">
+              Schedule Appointment Time:
+            </div>
+            
+            <div class="booking-datetime-grid">
+              <div class="calendar-widget">
+                <div class="calendar-header">
+                  <span id="calendarMonthYear">June 2026</span>
+                  <div style="display: flex; gap: 8px;">
+                    <i class="fa-solid fa-chevron-left" style="cursor: pointer; opacity: 0.5;"></i>
+                    <i class="fa-solid fa-chevron-right" style="cursor: pointer; opacity: 0.5;"></i>
+                  </div>
+                </div>
+                
+                <div class="calendar-days-grid" id="calendarDays">
+                  <!-- Generated dynamically in JS -->
+                </div>
+              </div>
+              
+              <div class="slots-widget">
+                <div class="slots-widget-title">Available Time Slots</div>
+                <div class="time-slots-grid" id="timeSlotsGrid">
+                  <!-- Dynamic time slot chips -->
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Step 4: Final Booking Review -->
+          <div class="booking-step-panel" id="step4Panel">
+            <div style="margin-bottom: 16px; font-weight: 600; font-size: 1rem; color: var(--accent-gold);">
+              Review Appointment Summary:
+            </div>
+            
+            <div style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span style="color: var(--text-muted);">Salon:</span>
+                <span id="reviewSalonName" style="font-weight: 600;">Rossano Ferretti Hair Spa</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span style="color: var(--text-muted);">Service:</span>
+                <span id="reviewServiceName" style="font-weight: 600;">The Method Precision Haircut</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span style="color: var(--text-muted);">Expert Stylist:</span>
+                <span id="reviewStylistName" style="font-weight: 600;">Alessandro Rossi (Senior Stylist)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span style="color: var(--text-muted);">Appointment Date:</span>
+                <span id="reviewDate" style="font-weight: 600; color: var(--accent-gold-bright);">June 18, 2026</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span style="color: var(--text-muted);">Time Slot:</span>
+                <span id="reviewTime" style="font-weight: 600; color: var(--accent-gold-bright);">11:00 AM - 12:00 PM</span>
+              </div>
+              
+              <div style="border-top: 1px solid var(--border-color); padding-top: 12px; margin-top: 12px; display: flex; justify-content: space-between;">
+                <span style="font-weight: 600;">Total Cost (Inclusive of Taxes):</span>
+                <span id="reviewCost" style="font-weight: 700; color: var(--accent-gold); font-size: 1.1rem;">₹5,500</span>
+              </div>
+            </div>
+            
+            <!-- Customer Contact Information -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div class="input-group">
+                <i class="fa-solid fa-user input-icon"></i>
+                <input type="text" id="bookingNameInput" placeholder="Your Name" value="Srushti">
+              </div>
+              <div class="input-group">
+                <i class="fa-solid fa-phone input-icon"></i>
+                <input type="tel" id="bookingPhoneInput" placeholder="Your Phone Number" value="+91 98765 43210">
+              </div>
+            </div>
+          </div>
+          
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn btn-secondary btn-sm" id="bookingPrevBtn" style="visibility: hidden;">
+            <i class="fa-solid fa-arrow-left"></i> Back
+          </button>
+          <button class="btn btn-primary btn-sm" id="bookingNextBtn">
+            Continue <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    
+    <!-- INTERACTIVE MAP MODAL -->
+    <div class="modal-overlay" id="mapModal">
+      <div class="modal-container" style="max-width: 780px;">
+        <div class="modal-header">
+          <h3 class="modal-title"><i class="fa-solid fa-map-location-dot"></i> Interactive Bangalore Map</h3>
+          <button class="modal-close-btn" id="closeMapBtn">&times;</button>
+        </div>
+        
+        <div class="modal-body" style="padding: 0; position: relative;">
+          <!-- Custom Visual SVG Map Overlay -->
+          <div class="map-canvas-container" id="mapCanvas">
+            
+            <!-- Styled SVG representing Bangalore's major roads/neighborhoods in a luxury dark scheme -->
+            <svg width="100%" height="100%" viewBox="0 0 800 360" fill="none" xmlns="http://www.w3.org/2000/svg" style="background:#0b0b0e; opacity: 0.95;">
+              <!-- Major areas glow circles -->
+              <circle cx="340" cy="180" r="140" fill="url(#radialGlow1)" opacity="0.15"/>
+              <circle cx="580" cy="110" r="90" fill="url(#radialGlow2)" opacity="0.12"/>
+              
+              <!-- Arterial roads -->
+              <!-- MG Road / Vittal Mallya -->
+              <path d="M 120 180 Q 300 180 480 180 T 750 180" stroke="#1c1c24" stroke-width="6" stroke-linecap="round"/>
+              <path d="M 120 180 Q 300 180 480 180 T 750 180" stroke="#c5a880" stroke-width="1.5" stroke-dasharray="8 6" opacity="0.4"/>
+              
+              <!-- Outer Ring Road -->
+              <path d="M 340 40 L 340 320" stroke="#14141a" stroke-width="4" stroke-linecap="round"/>
+              <path d="M 580 40 L 580 320" stroke="#14141a" stroke-width="4" stroke-linecap="round"/>
+              
+              <!-- Indiranagar double road connection -->
+              <path d="M 480 180 Q 580 110 580 40" stroke="#1c1c24" stroke-width="4" stroke-linecap="round"/>
+              
+              <!-- Old Airport Road -->
+              <path d="M 480 180 L 720 280" stroke="#1c1c24" stroke-width="4" stroke-linecap="round"/>
+              
+              <!-- Area grid labels -->
+              <text x="350" y="240" fill="#71717a" font-size="10" font-family="Plus Jakarta Sans" font-weight="600" letter-spacing="1">LAVELLE RD / UB CITY</text>
+              <text x="590" y="140" fill="#71717a" font-size="10" font-family="Plus Jakarta Sans" font-weight="600" letter-spacing="1">INDIRANAGAR</text>
+              <text x="280" y="60" fill="#71717a" font-size="10" font-family="Plus Jakarta Sans" font-weight="600" letter-spacing="1">KORAMANGALA</text>
+              <text x="640" y="240" fill="#71717a" font-size="10" font-family="Plus Jakarta Sans" font-weight="600" letter-spacing="1">OLD AIRPORT RD</text>
+              
+              <defs>
+                <radialGradient id="radialGlow1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(340 180) rotate(90) scale(140)">
+                  <stop offset="0%" stop-color="#c5a880"/>
+                  <stop offset="100%" stop-color="#c5a880" stop-opacity="0"/>
+                </radialGradient>
+                <radialGradient id="radialGlow2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(580 110) rotate(90) scale(90)">
+                  <stop offset="0%" stop-color="#c5a880"/>
+                  <stop offset="100%" stop-color="#c5a880" stop-opacity="0"/>
+                </radialGradient>
+              </defs>
+            </svg>
+            
+            <!-- Map Markers. Coordinates absolute overlay -->
+            <!-- Marker 1: Play Salon (UB City) at x=360, y=170 -->
+            <div class="map-marker" style="left: 360px; top: 170px;" data-id="2">
+              <div class="map-marker-pin"></div>
+              <div class="map-marker-label">Play Salon - UB City</div>
+            </div>
+            
+            <!-- Marker 2: Rossano Ferretti (Ritz) at x=310, y=190 -->
+            <div class="map-marker" style="left: 310px; top: 190px;" data-id="1">
+              <div class="map-marker-pin"></div>
+              <div class="map-marker-label">Rossano Ferretti - Ritz Carlton</div>
+            </div>
+            
+            <!-- Marker 3: Warren Tricomi (JW Marriott) at x=350, y=150 -->
+            <div class="map-marker" style="left: 350px; top: 150px;" data-id="3">
+              <div class="map-marker-pin"></div>
+              <div class="map-marker-label">Warren Tricomi - JW Marriott</div>
+            </div>
+            
+            <!-- Marker 4: Jean-Claude Biguine (JCB Lavelle Road) at x=380, y=195 -->
+            <div class="map-marker" style="left: 380px; top: 195px;" data-id="4">
+              <div class="map-marker-pin"></div>
+              <div class="map-marker-label">Jean-Claude Biguine</div>
+            </div>
+            
+            <!-- Marker 5: BBlunt (Indiranagar) at x=570, y=110 -->
+            <div class="map-marker" style="left: 570px; top: 110px;" data-id="5">
+              <div class="map-marker-pin"></div>
+              <div class="map-marker-label">BBlunt Premium</div>
+            </div>
+            
+            <!-- Marker 6: Leela Palace Salon (Old Airport Road) at x=620, y=250 -->
+            <div class="map-marker" style="left: 620px; top: 250px;" data-id="6">
+              <div class="map-marker-pin"></div>
+              <div class="map-marker-label">The Spa & Salon - Leela Palace</div>
+            </div>
+            
+            <!-- Map Card Hover info -->
+            <div class="map-overlay-card" id="mapOverlayCard" style="display: none;">
+              <div>
+                <div class="map-overlay-title" id="mapCardTitle">Rossano Ferretti Hair Spa</div>
+                <div class="map-overlay-desc" id="mapCardDesc">The Ritz-Carlton, Ashok Nagar | Price Tier: Premium</div>
+              </div>
+              <button class="btn btn-primary btn-sm" id="mapCardBookBtn" style="padding: 6px 12px; font-size: 0.75rem;">Book Now</button>
+            </div>
+            
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <div style="font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-circle-info" style="color: var(--accent-gold);"></i> Click a golden pin to view details and book.
+          </div>
+          <button class="btn btn-secondary btn-sm" id="closeMapFooterBtn">Close Map</button>
+        </div>
+      </div>
+    </div>
+    
+    
+    <!-- LUXURY BRAND FOOTER -->
+    <footer class="footer">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand-title">AURA</div>
+          <p style="margin-bottom: 20px; max-width: 320px;">
+            Discover, compare, and reserve appointments with the most exclusive hair artists and wellness sanctuaries in Bangalore.
+          </p>
+          <div style="display: flex; gap: 16px; font-size: 1.2rem; color: var(--accent-gold);">
+            <a href="#"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#"><i class="fa-brands fa-facebook"></i></a>
+            <a href="#"><i class="fa-brands fa-pinterest"></i></a>
+            <a href="#"><i class="fa-brands fa-linkedin"></i></a>
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="footer-heading">Top Locations</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-loc-link" data-loc="UB City">UB City / Vittal Mallya Rd</a></li>
+            <li><a href="#" class="footer-loc-link" data-loc="Ashok Nagar">Ashok Nagar (5-Star Hotels)</a></li>
+            <li><a href="#" class="footer-loc-link" data-loc="Indiranagar">Indiranagar 100ft Rd</a></li>
+            <li><a href="#" class="footer-loc-link" data-loc="Old Airport Road">Leela Palace Complex</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="footer-heading">Elite Services</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-service-link" data-cat="Italian Method">Rossano Ferretti Method Cut</a></li>
+            <li><a href="#" class="footer-service-link" data-cat="Balayage">French Balayage & Styling</a></li>
+            <li><a href="#" class="footer-service-link" data-cat="Gold Facial">24 Karat Ayurvedic Facials</a></li>
+            <li><a href="#" class="footer-service-link" data-cat="Spa Treatments">Thai Ritual Body Spa</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <div>&copy; 2026 AURA Elite. Developed for Bangalore Luxury Salons. All Rights Reserved.</div>
+        <div style="display: flex; gap: 24px;">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms & Conditions</a>
+          <a href="#">VIP Support</a>
+        </div>
+      </div>
+    </footer>
+    
+  </div>
+
+  <!-- Core Javascript File -->
+  <script src="app.js"></script>
+</body>
+</html>
