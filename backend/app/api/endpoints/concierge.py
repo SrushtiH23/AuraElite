@@ -6,7 +6,7 @@ import logging
 import json
 from typing import List, Dict, Any
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, status, File, Form, UploadFile
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_current_user
@@ -355,7 +355,26 @@ def generate_mock_recommendations(
 GEMINI_FACE_SCHEMA = {
     "type": "OBJECT",
     "properties": {
-        "face_shape": {"type": "STRING"},
+        "detected_gender": {
+            "type": "STRING",
+            "description": "Apparent gender detected from the image: Male, Female, or Non-Binary"
+        },
+        "face_shape": {
+            "type": "STRING",
+            "description": "Detected face shape: Oval, Round, Square, Heart, Diamond, or Oblong"
+        },
+        "key_features": {
+            "type": "STRING",
+            "description": "Detailed description of facial landmarks: jawline shape, forehead width, cheekbone prominence, chin shape, face length-to-width ratio"
+        },
+        "skin_tone": {
+            "type": "STRING",
+            "description": "Detected skin tone category: Fair, Light, Medium, Olive, Tan, Brown, Dark Brown, Deep"
+        },
+        "confidence": {
+            "type": "STRING",
+            "description": "Confidence level of the face shape detection: High, Medium, or Low"
+        },
         "recommended_hairstyles": {
             "type": "ARRAY",
             "items": {
@@ -369,7 +388,7 @@ GEMINI_FACE_SCHEMA = {
         },
         "explanation": {"type": "STRING"}
     },
-    "required": ["face_shape", "recommended_hairstyles", "explanation"]
+    "required": ["detected_gender", "face_shape", "key_features", "skin_tone", "confidence", "recommended_hairstyles", "explanation"]
 }
 
 
@@ -382,10 +401,12 @@ GEMINI_FACE_SCHEMA = {
 )
 async def analyze_face_shape(
     file: UploadFile = File(...),
+    gender: str = Form(""),
     current_user: User = Depends(get_current_user),
 ):
     """
     Analyze the user's face shape from a selfie image and recommend hairstyles.
+    Accepts an optional `gender` form field (Male/Female/Non-Binary) to improve accuracy.
     If GEMINI_API_KEY is not set, a high-fidelity mock face analysis is returned.
     """
     # Verify file type is an image
@@ -395,10 +416,13 @@ async def analyze_face_shape(
             detail="Uploaded file must be a valid image.",
         )
 
+    # Normalize the gender input
+    gender_clean = gender.strip().title() if gender else ""
+
     # Check for Gemini API Key; if missing, generate mock response
     if not settings.GEMINI_API_KEY:
         logger.warning("GEMINI_API_KEY is not configured. Falling back to mock face shape analysis.")
-        return generate_mock_face_analysis(file.filename)
+        return generate_mock_face_analysis(file.filename, gender_clean)
 
     try:
         # Read file contents and encode to base64
@@ -406,19 +430,104 @@ async def analyze_face_shape(
         import base64
         base64_image = base64.b64encode(image_bytes).decode("utf-8")
 
-        prompt = """
-        You are an expert AI Esthetician and Luxury Style Director for "Aura Elite".
-        Analyze the provided selfie image and identify the user's face shape (Oval, Round, Square, Heart, or Diamond).
-        Provide a structured analysis including:
-        1. The detected face shape (choose one of: Oval, Round, Square, Heart, Diamond).
-        2. A list of 3 recommended hairstyles that perfectly complement this face shape and enhance their features.
-        3. A detailed, elegant, and sophisticated explanation of the analysis (why this face shape was selected and how the recommended hairstyles balance their features).
+        # Build a gender hint clause for the prompt
+        gender_hint = ""
+        if gender_clean in ("Male", "Female", "Non-Binary"):
+            gender_hint = f"\nIMPORTANT: The user has self-identified as {gender_clean}. Use this as the detected_gender and tailor ALL hairstyle recommendations specifically for {gender_clean} individuals.\n"
+        else:
+            gender_hint = "\nThe user has not specified their gender. Detect the apparent gender from the image and tailor hairstyle recommendations accordingly.\n"
 
-        Write a personalized explanation in an elegant concierge tone. Show expertise about style.
-        """
+        prompt = f"""You are an expert AI Facial Geometry Analyst and Luxury Style Director for "Aura Elite", a premium salon concierge in Bangalore.
+
+TASK: Carefully analyze the provided selfie photograph and produce a precise facial geometry analysis.
+
+STEP 1 — GENDER DETECTION:
+{gender_hint}
+Determine whether the person in the image appears Male, Female, or Non-Binary. This is THE MOST CRITICAL STEP because hairstyle recommendations MUST match the person's gender.
+
+GENDER-SPECIFIC HAIRSTYLE RULES (YOU MUST FOLLOW THESE STRICTLY):
+
+IF THE PERSON IS MALE, you MUST ONLY recommend men's hairstyles. Here are examples of appropriate MALE hairstyles:
+  - Low Fade with Textured Top
+  - High Skin Fade with Pompadour
+  - Classic Taper Fade
+  - Crew Cut with Line Up
+  - Buzz Cut
+  - Textured Quiff
+  - Slick Back with Mid Fade
+  - French Crop with Fringe
+  - Undercut with Comb Over
+  - Messy Fringe with Taper
+  - Side Part Fade
+  - Drop Fade with Curly Top
+  - Caesar Cut
+  - Man Bun / Top Knot (for longer hair)
+  - Ivy League Cut
+  - Edgar Cut
+  - Mullet Fade
+  - Bro Flow
+  - Disconnected Undercut
+  
+  NEVER recommend bobs, lobs, curtain bangs, shags, chignons, layers, pixie cuts, beach waves, or any women's hairstyle for a male face. This is absolutely critical.
+
+IF THE PERSON IS FEMALE, recommend women's hairstyles such as:
+  - Layered Lob (Long Bob)
+  - Curtain Bangs with Long Layers
+  - Pixie Cut
+  - Beach Waves
+  - Blunt Bob
+  - Shag Cut
+  - Side-Swept Bangs with Layers
+  - Braided Updo
+  - Hollywood Waves
+  - Textured Bob
+
+IF NON-BINARY, recommend gender-neutral styles like textured crops, modern shags, asymmetrical cuts.
+
+STEP 2 — FACE SHAPE ANALYSIS:
+Analyze the following specific facial landmarks to determine face shape:
+a) FOREHEAD WIDTH: Measure visually from temple to temple. Is it narrow, average, or wide?
+b) CHEEKBONE WIDTH: Are cheekbones wider than the forehead and jawline, or proportional?
+c) JAWLINE SHAPE: Is the jaw angular/square, rounded, pointed/tapered, or soft?
+d) CHIN SHAPE: Is it pointed, rounded, square, or narrow?
+e) FACE LENGTH vs WIDTH RATIO: Is the face longer than it is wide (elongated), approximately equal (balanced), or wider than long?
+
+Use these measurements to classify face shape:
+- OVAL: Face length is about 1.5x the width; forehead slightly wider than chin; gentle jawline curves. Most versatile.
+- ROUND: Face length ≈ width; full cheeks; soft, curved jawline; rounded chin. Needs angular/elongating styles.
+- SQUARE: Forehead, cheekbones, and jaw are roughly equal width; strong angular jawline; broad forehead. Needs softening.
+- HEART: Wide forehead and cheekbones; narrow jawline tapering to a pointed chin. Needs jaw-width balance.
+- DIAMOND: Narrow forehead and jawline; wide prominent cheekbones; pointed chin. Needs forehead/jaw width.
+- OBLONG: Face significantly longer than wide; similar width at forehead, cheeks, and jaw; long straight cheeks. Needs width/volume.
+
+STEP 3 — KEY FEATURES:
+Write a concise description of what you observed: mention forehead width, jawline angularity, cheekbone prominence, chin shape, and the length-to-width ratio that led to your classification.
+
+STEP 4 — SKIN TONE:
+Detect the skin tone from the image. Choose from: Fair, Light, Medium, Olive, Tan, Brown, Dark Brown, Deep.
+
+STEP 5 — CONFIDENCE:
+Rate your confidence in the face shape classification: High (clearly one shape), Medium (could be one of two shapes), Low (image quality makes analysis difficult).
+
+STEP 6 — HAIRSTYLE RECOMMENDATIONS:
+Based on the detected gender AND face shape, provide exactly 3 hairstyle recommendations that:
+- Are 100% appropriate for the detected gender (NEVER suggest women's cuts for men or vice versa)
+- Complement and balance the detected face shape
+- Include specific styling details and how to achieve the look
+- Reference how each style addresses the person's particular facial proportions
+- Are modern, trendy, and commonly requested at premium salons in 2024-2025
+
+STEP 7 — EXPLANATION:
+Write an elegant, personalized explanation in a luxury concierge tone. Reference the specific facial landmarks you analyzed. Explain WHY this face shape was detected and HOW each recommended hairstyle will enhance or balance their features. Be specific — mention their jawline, forehead, cheekbones, etc.
+
+CRITICAL REMINDERS:
+1. Do NOT default to "Oval" unless the face truly has balanced oval proportions. Most faces are NOT oval.
+2. NEVER recommend feminine hairstyles (bobs, lobs, curtain bangs, shags, layers) for a MALE face. This is the #1 rule.
+3. NEVER recommend masculine hairstyles (fades, buzz cuts, crew cuts) for a FEMALE face unless they specifically want that style.
+4. Analyze the image carefully — pay close attention to facial hair, bone structure, and overall presentation."""
 
         # Call Gemini API
-        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
         request_body = {
             "contents": [
                 {
@@ -436,95 +545,377 @@ async def analyze_face_shape(
             "generationConfig": {
                 "responseMimeType": "application/json",
                 "responseSchema": GEMINI_FACE_SCHEMA,
-                "temperature": 0.2
+                "temperature": 0.3
             }
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=45.0) as client:
             res = await client.post(api_url, json=request_body)
             
             if res.status_code != 200:
                 logger.error(f"Gemini API error during face analysis: {res.status_code} - {res.text}")
-                return generate_mock_face_analysis(file.filename)
+                return generate_mock_face_analysis(file.filename, gender_clean)
 
             response_data = res.json()
             generated_text = response_data['candidates'][0]['content']['parts'][0]['text']
             analysis_dict = json.loads(generated_text)
 
+            # If user provided gender, override the detected one
+            final_gender = gender_clean if gender_clean in ("Male", "Female", "Non-Binary") else analysis_dict.get("detected_gender", "Unknown")
+
+            # Validate that Gemini's hairstyle recommendations match the gender
+            gemini_hairstyles = [
+                HairstyleRecommendation(**h) for h in analysis_dict.get("recommended_hairstyles", [])
+            ]
+            validated_hairstyles = _validate_hairstyles_for_gender(
+                gemini_hairstyles, final_gender, analysis_dict.get("face_shape", "Oval")
+            )
+
             return FaceAnalysisResponse(
                 face_shape=analysis_dict.get("face_shape", "Oval"),
-                recommended_hairstyles=[
-                    HairstyleRecommendation(**h) for h in analysis_dict.get("recommended_hairstyles", [])
-                ],
+                detected_gender=final_gender,
+                key_features=analysis_dict.get("key_features", ""),
+                skin_tone=analysis_dict.get("skin_tone", ""),
+                confidence=analysis_dict.get("confidence", "Medium"),
+                recommended_hairstyles=validated_hairstyles,
                 explanation=analysis_dict.get("explanation", ""),
                 is_mock=False
             )
 
     except Exception as e:
         logger.error(f"Failed to get Gemini face analysis: {str(e)}")
-        return generate_mock_face_analysis(file.filename)
+        return generate_mock_face_analysis(file.filename, gender_clean)
+
+
+# ── Hairstyle Gender Validation ──────────────────────────────────
+
+# Keywords that strongly indicate female-only hairstyles
+_FEMALE_ONLY_KEYWORDS = [
+    "bob", "lob", "bangs", "fringe with layers", "curtain bang", "shag",
+    "pixie", "chignon", "updo", "beach wave", "hollywood wave",
+    "blowout", "blunt cut", "face-framing layer", "collarbone",
+    "shoulder-length wave", "layered lob", "wispy layer",
+    "voluminous wave", "braided", "braid"
+]
+
+# Keywords that strongly indicate male-only hairstyles
+_MALE_ONLY_KEYWORDS = [
+    "fade", "buzz cut", "crew cut", "pompadour", "undercut",
+    "taper", "line up", "edgar", "mullet", "man bun", "top knot",
+    "ivy league", "caesar", "bro flow", "quiff", "slick back",
+    "comb over", "drop fade", "skin fade", "high fade", "low fade",
+    "mid fade", "temple fade"
+]
+
+
+def _validate_hairstyles_for_gender(
+    hairstyles: list,
+    gender: str,
+    face_shape: str
+) -> list:
+    """
+    Validates that Gemini-returned hairstyles actually match the user's gender.
+    If mismatched styles are detected, replaces them with curated alternatives
+    from the mock recommendation database.
+    """
+    if gender not in ("Male", "Female"):
+        return hairstyles  # Can't validate non-binary or unknown
+
+    if not hairstyles:
+        return hairstyles
+
+    # Check each hairstyle for gender mismatch
+    wrong_keywords = _FEMALE_ONLY_KEYWORDS if gender == "Male" else _MALE_ONLY_KEYWORDS
+    mismatched_count = 0
+
+    for h in hairstyles:
+        name_lower = h.name.lower()
+        desc_lower = h.description.lower() if h.description else ""
+        combined = name_lower + " " + desc_lower
+
+        for keyword in wrong_keywords:
+            if keyword in combined:
+                mismatched_count += 1
+                break
+
+    # If more than half the hairstyles are mismatched, replace ALL with curated ones
+    if mismatched_count > len(hairstyles) // 2:
+        logger.warning(
+            f"Gemini returned {mismatched_count}/{len(hairstyles)} gender-mismatched "
+            f"hairstyles for {gender}. Replacing with curated {gender} recommendations."
+        )
+        # Get the curated data for this gender and face shape
+        if gender == "Male":
+            rec_db = _get_male_recommendations()
+        else:
+            rec_db = _get_female_recommendations()
+
+        data = rec_db.get(face_shape, rec_db.get("Oval", {}))
+        if data and "hairstyles" in data:
+            return [HairstyleRecommendation(**h) for h in data["hairstyles"]]
+
+    return hairstyles
+
+
+def _get_male_recommendations() -> dict:
+    """Returns the curated male hairstyle recommendation database."""
+    return {
+        "Oval": {
+            "hairstyles": [
+                {"name": "Classic Textured Quiff", "description": "A modern quiff with textured top and tapered sides. The volume at the front enhances your balanced oval proportions while the tapered sides maintain clean lines along your symmetrical jawline."},
+                {"name": "Medium-Length Side Part", "description": "A refined side part with 3-4 inches on top, faded sides. The off-center parting adds subtle asymmetry to complement your naturally balanced facial geometry."},
+                {"name": "Modern French Crop with Fringe", "description": "A short textured crop with a forward-brushed fringe. The soft fringe adds character to your versatile oval shape without disrupting its natural harmony."}
+            ]
+        },
+        "Round": {
+            "hairstyles": [
+                {"name": "High-Volume Pompadour", "description": "A tall pompadour with significant height at the crown and tight faded sides. The vertical volume elongates your round face, creating a more angular overall silhouette."},
+                {"name": "Angular Undercut with Textured Top", "description": "Clean disconnected undercut with 4+ inches of textured hair on top. The sharp contrast between sides and top introduces geometric lines that counter facial roundness."},
+                {"name": "Spiky Crew Cut with Skin Fade", "description": "A short, spiky-textured top with a skin fade. The upward-directed texture adds vertical emphasis, drawing the eye upward and creating the illusion of facial length."}
+            ]
+        },
+        "Square": {
+            "hairstyles": [
+                {"name": "Textured Side-Swept Crop", "description": "A medium-length crop swept to one side with natural texture. The diagonal direction of the styling softens the strong horizontal forehead line while complementing your powerful jawline."},
+                {"name": "Short Messy Quiff", "description": "A relaxed, tousled quiff with moderate volume. The intentional messiness softens the angular geometry of your forehead and jaw, adding organic movement."},
+                {"name": "Buzz Cut with Beard Fade", "description": "A clean #2 or #3 buzz cut paired with a well-groomed beard that fades into the hairline. This bold choice celebrates your strong bone structure rather than disguising it."}
+            ]
+        },
+        "Heart": {
+            "hairstyles": [
+                {"name": "Medium-Length Fringe with Taper", "description": "A longer top with a forward-falling fringe and clean tapered sides. The fringe narrows the appearance of the wider forehead, creating visual balance with the narrower jawline."},
+                {"name": "Textured Caesar Cut", "description": "A short, even-length cut with a horizontal fringe. The Caesar's uniform length and forward fringe minimize the forehead-to-chin width differential."},
+                {"name": "Slicked-Back Undercut", "description": "Hair swept back from the forehead with faded sides. Pulling hair away from the face shows confidence while the undercut's clean sides draw attention to your cheekbone structure."}
+            ]
+        },
+        "Diamond": {
+            "hairstyles": [
+                {"name": "Voluminous Brushed-Up Style", "description": "Hair brushed upward and back with strong volume at the crown. This adds width at the top of the head, balancing the narrow forehead against your dramatic cheekbones."},
+                {"name": "Classic Taper with Side Part", "description": "A gentleman's taper cut with a defined side part and slight volume. The structured silhouette adds width at the temples, counterbalancing the cheekbone dominance."},
+                {"name": "Textured Fringe with Fade", "description": "A longer textured fringe falling across the forehead with a mid-fade. The fringe adds visual width to the narrow forehead while the fade keeps the cheekbone area clean."}
+            ]
+        },
+        "Oblong": {
+            "hairstyles": [
+                {"name": "Textured Crop with Heavy Fringe", "description": "A short textured top with a thick, full fringe covering the forehead. The horizontal fringe visually shortens the face length, making your proportions appear more balanced."},
+                {"name": "Side-Swept Medium Length", "description": "Medium-length hair swept to the side with volume at the temples. The lateral volume adds visual width to counterbalance the elongated facial structure."},
+                {"name": "Classic Ivy League", "description": "A timeless Ivy League cut with slightly longer top and neat sides. The moderate length prevents adding further vertical emphasis while keeping the look polished."}
+            ]
+        }
+    }
+
+
+def _get_female_recommendations() -> dict:
+    """Returns the curated female hairstyle recommendation database."""
+    return {
+        "Oval": {
+            "hairstyles": [
+                {"name": "Sleek Lob with Face-Framing Layers", "description": "A long bob hitting at the collarbone with subtle face-framing layers. These layers highlight your symmetrical oval structure while adding gentle movement around the cheekbones."},
+                {"name": "Soft Wavy Shag with Curtain Bangs", "description": "Textured shaggy waves paired with parted curtain bangs. The curtain effect softly frames your balanced forehead and draws attention to your eyes."},
+                {"name": "Deep Side-Parted Hollywood Waves", "description": "Classic glamour waves with a deep side part. Adds dramatic volume to one side, creating visual interest while celebrating your naturally balanced proportions."}
+            ]
+        },
+        "Round": {
+            "hairstyles": [
+                {"name": "Asymmetrical Long Bob", "description": "An angled lob that is longer in the front than the back. The diagonal line draws the eye downward, creating the illusion of length and introducing angular structure to soften roundness."},
+                {"name": "Voluminous Layered Blowout", "description": "Long layers with crown volume blown out to maximum height. The vertical lift at the crown elongates your face while layers past the chin create a lengthening frame."},
+                {"name": "Sleek Center-Part with Long Layers", "description": "Long, smooth hair with a precise center part and layers starting at the chin. The vertical parting line visually divides and elongates, while chin-level layers add angular framing."}
+            ]
+        },
+        "Square": {
+            "hairstyles": [
+                {"name": "Wispy Layered Shoulder Cut", "description": "Feathery, wispy layers cascading from the collarbone. The soft, irregular texture breaks the sharp horizontal lines of your strong jawline, creating organic, romantic movement."},
+                {"name": "Side-Swept Soft Fringe with Long Waves", "description": "A sweeping side fringe paired with long, loose waves. The diagonal fringe softens the broad forehead while waves add curved texture against your angular jaw."},
+                {"name": "Tousled Beachy Waves with Middle Part", "description": "Natural, textured beach waves with a relaxed center part. The curved wave texture offsets the straight geometric lines of forehead and jaw, creating effortless harmony."}
+            ]
+        },
+        "Heart": {
+            "hairstyles": [
+                {"name": "Chin-Length Textured Bob", "description": "A classic bob ending precisely at the chin. This strategic length adds volume and fullness exactly where your face narrows, balancing the wider forehead with a harmonious lower frame."},
+                {"name": "Side-Swept Wispy Bangs with Long Waves", "description": "Long flowing waves paired with delicate side-swept bangs. The diagonal fringe visually narrows the wider forehead while waves add body around the narrower jawline."},
+                {"name": "Layered Collarbone Shag", "description": "A modern shag with graduated layers concentrated from chin to collarbone. Creates maximum texture and fullness around the narrowest part of your face, achieving beautiful balance."}
+            ]
+        },
+        "Diamond": {
+            "hairstyles": [
+                {"name": "Chin-Length Classic Bob", "description": "A polished bob ending at the chin with slight inward curving. Fills the space around the narrow jawline while the clean horizontal line adds width below your dramatic cheekbones."},
+                {"name": "Deep Side-Part with Voluminous Waves", "description": "A dramatic side part paired with body-rich waves. The side part adds visual width at the narrow forehead, while voluminous waves soften the sharp cheekbone angles."},
+                {"name": "Soft Curtain Bangs with Long Layers", "description": "Wispy parted bangs paired with face-framing long layers. The curtain bangs widen the narrow forehead, while layers at the jaw add needed fullness to the lower face."}
+            ]
+        },
+        "Oblong": {
+            "hairstyles": [
+                {"name": "Full Blunt Bangs with Medium Layers", "description": "A thick, blunt fringe paired with shoulder-length layers. The horizontal bang line visually shortens your face length while layers add lateral fullness and width."},
+                {"name": "Voluminous Shoulder-Length Waves", "description": "Full, bouncy waves hitting at the shoulders with maximum volume at the sides. The lateral volume adds visual width, counterbalancing the elongated facial structure beautifully."},
+                {"name": "Textured Bob with Side-Swept Bangs", "description": "A chin-length bob with gentle texture and a side-swept fringe. The shorter length prevents adding vertical emphasis, while the fringe shortens the perceived face length."}
+            ]
+        }
+    }
 
 
 # ── Mock Face Analysis Generator Fallback ────────────────────────
 
-def generate_mock_face_analysis(filename: str) -> FaceAnalysisResponse:
+def generate_mock_face_analysis(filename: str, gender: str = "") -> FaceAnalysisResponse:
     """
     Generates high-fidelity mock face shape analysis recommendations.
-    Uses filename or simple hash-based routing to ensure deterministic styling.
+    Uses a proper hash of the filename for deterministic but varied selection.
+    Provides completely separate male and female recommendation databases.
     """
-    # Basic deterministic choice using filename length
-    shapes = ["Oval", "Round", "Square", "Heart", "Diamond"]
-    idx = len(filename) % len(shapes)
+    import hashlib
+    import random
+
+    # Use a proper hash for better distribution than filename length
+    file_hash = int(hashlib.md5(filename.encode()).hexdigest(), 16)
+
+    shapes = ["Oval", "Round", "Square", "Heart", "Diamond", "Oblong"]
+    idx = file_hash % len(shapes)
     selected_shape = shapes[idx]
 
-    # Predefined recommendations for each shape
-    recommendations_db = {
+    # Determine gender for recommendations
+    if gender in ("Male", "Female"):
+        selected_gender = gender
+    else:
+        # Use hash to pick a gender for the mock
+        selected_gender = "Male" if (file_hash // len(shapes)) % 2 == 0 else "Female"
+
+    # ── MALE recommendation database ─────────────────────────────
+    male_recommendations = {
         "Oval": {
             "hairstyles": [
-                {"name": "Sleek Lob with Face-Framing Layers", "description": "A long bob hitting right at the collarbone. Subtle face-framing layers highlight your symmetrical oval structure without elongating it."},
-                {"name": "Soft Wavy Shag with Curtain Bangs", "description": "Textured shaggy waves with curtain bangs. Curtains break up the vertical line of the face, drawing attention to your eyes."},
-                {"name": "Deep Side-Parted Waves", "description": "Classic Hollywood glamour waves parted deeply. This adds volume to one side, adding drama and highlighting your cheekbones."}
+                {"name": "Classic Textured Quiff", "description": "A modern quiff with textured top and tapered sides. The volume at the front enhances your balanced oval proportions while the tapered sides maintain clean lines along your symmetrical jawline."},
+                {"name": "Medium-Length Side Part", "description": "A refined side part with 3-4 inches on top, faded sides. The off-center parting adds subtle asymmetry to complement your naturally balanced facial geometry."},
+                {"name": "Modern French Crop with Fringe", "description": "A short textured crop with a forward-brushed fringe. The soft fringe adds character to your versatile oval shape without disrupting its natural harmony."}
             ],
-            "explanation": "Oval face shapes are highly versatile and balanced. The French-trained stylists at Warren Tricomi recommend choosing cuts that maintain this natural symmetry. A collarbone-length lob or textured waves with curtain bangs are excellent selections that will accentuate your high cheekbones and soft jawline."
+            "key_features": "Balanced forehead-to-jaw ratio with proportional cheekbones. Jawline gently curves from ear to chin. Face length is approximately 1.5× the width — classic oval geometry.",
+            "skin_tone": "Medium",
+            "explanation": "Your face exhibits the hallmarks of the classic oval geometry — a forehead that is marginally wider than a softly curved jawline, with cheekbones sitting harmoniously between the two. The expert barbers at Rossano Ferretti recommend a textured quiff or medium-length side part to enhance this naturally versatile canvas. These cuts add intentional styling interest while respecting your balanced proportions."
         },
         "Round": {
             "hairstyles": [
-                {"name": "Asymmetrical Long Bob", "description": "An uneven cut that is longer in the front. This draws the eye downward, creating the illusion of length and minimizing roundness."},
-                {"name": "Voluminous Pixie Cut with Side Bangs", "description": "Short textured top with clean sides. Elevating the height at the crown elongates the face and adds modern architectural lines."},
-                {"name": "Long Shaggy Layers", "description": "Long textured layers starting past the chin. Avoid bulk at the cheeks and create length while providing natural movement."}
+                {"name": "High-Volume Pompadour", "description": "A tall pompadour with significant height at the crown and tight faded sides. The vertical volume elongates your round face, creating a more angular overall silhouette."},
+                {"name": "Angular Undercut with Textured Top", "description": "Clean disconnected undercut with 4+ inches of textured hair on top. The sharp contrast between sides and top introduces geometric lines that counter facial roundness."},
+                {"name": "Spiky Crew Cut with Skin Fade", "description": "A short, spiky-textured top with a skin fade. The upward-directed texture adds vertical emphasis, drawing the eye upward and creating the illusion of facial length."}
             ],
-            "explanation": "Round face shapes benefit from styles that introduce structure, height, and length. Play Salon UB City stylists suggest an asymmetrical lob or a pixie cut with crown volume. These techniques create flattering angles, elongating the silhouette and framing your cheeks with elegant, lengthening shadows."
+            "key_features": "Face width and length are nearly equal. Full, rounded cheeks with a soft curved jawline. Minimal angularity at the chin. Cheekbones are the widest point but without sharp definition.",
+            "skin_tone": "Medium",
+            "explanation": "Your facial geometry reveals a round structure — face width and length are nearly equal, with full cheeks and a softly curved jawline. Play Salon's master barbers recommend styles that introduce vertical height and angular contrast. A high pompadour or disconnected undercut will create the visual illusion of elongation, counterbalancing the natural roundness with sharp, architectural lines."
         },
         "Square": {
             "hairstyles": [
-                {"name": "Wispy Layered Shoulder Cut", "description": "Feathery layers starting from the collarbone. Soft, wispy texture breaks the sharp angles of a strong jawline."},
-                {"name": "Side-Swept Soft Fringe", "description": "A long, sweeping side fringe. This softens the forehead and draws attention diagonally rather than horizontally."},
-                {"name": "Tousled Beachy Waves", "description": "Textured, loose waves. Curved texture offsets the straight lines of the forehead and jaw, creating a harmonious, romantic look."}
+                {"name": "Textured Side-Swept Crop", "description": "A medium-length crop swept to one side with natural texture. The diagonal direction of the styling softens the strong horizontal forehead line while complementing your powerful jawline."},
+                {"name": "Short Messy Quiff", "description": "A relaxed, tousled quiff with moderate volume. The intentional messiness softens the angular geometry of your forehead and jaw, adding organic movement."},
+                {"name": "Buzz Cut with Beard Fade", "description": "A clean #2 or #3 buzz cut paired with a well-groomed beard that fades into the hairline. This bold choice celebrates your strong bone structure rather than disguising it."}
             ],
-            "explanation": "Square face shapes boast strong, gorgeous jawlines and broad foreheads. The Method Precision Haircut at Rossano Ferretti is designed to soften these striking angles. By creating soft, wispy layers and long side-swept fringes, our directors neutralize horizontal lines, surrounding your face in a frame of gentle, rounded waves."
+            "key_features": "Prominent, angular jawline with a broad forehead of similar width. Cheekbones align with both forehead and jaw creating a powerful rectangular structure. Strong chin with defined angles.",
+            "skin_tone": "Medium",
+            "explanation": "Your face showcases the striking geometry of the square shape — a broad forehead that mirrors the width of a strong, angular jawline, with defined cheekbones connecting the two. Warren Tricomi's directors suggest styles that either elegantly soften these angles with textured movement, or boldly celebrate them with a clean buzz cut. The textured side-swept crop is particularly effective at breaking the horizontal symmetry."
         },
         "Heart": {
             "hairstyles": [
-                {"name": "Chin-Length Textured Bob", "description": "A classic bob landing right at the chin. This adds volume at the jawline, balancing the wider forehead and narrower chin."},
-                {"name": "Side-Swept Wispy Bangs with Long Waves", "description": "Long, flowing waves with a diagonal fringe. Side-swept bangs reduce the width of the forehead while keeping the focus on the eyes."},
-                {"name": "Layered Collarbone Shag", "description": "Shaggy layers focused from the chin down. Creates texture and fullness where the face is narrowest, balancing your overall profile."}
+                {"name": "Medium-Length Fringe with Taper", "description": "A longer top with a forward-falling fringe and clean tapered sides. The fringe narrows the appearance of the wider forehead, creating visual balance with the narrower jawline."},
+                {"name": "Textured Caesar Cut", "description": "A short, even-length cut with a horizontal fringe. The Caesar's uniform length and forward fringe minimize the forehead-to-chin width differential."},
+                {"name": "Slicked-Back Undercut", "description": "Hair swept back from the forehead with faded sides. Pulling hair away from the face shows confidence while the undercut's clean sides draw attention to your cheekbone structure."}
             ],
-            "explanation": "Heart face shapes feature a wider forehead and a delicate, pointed chin. To balance this silhouette, JCB Lavelle Road stylists recommend adding volume and width around the jawline. A chin-length textured bob or collarbone-length shag with side-swept bangs achieves a stunning proportions, softening the forehead and framing the chin."
+            "key_features": "Wide forehead tapering to a narrower jawline and pointed chin. Cheekbones are prominent and sit high. The upper third of the face is noticeably wider than the lower third.",
+            "skin_tone": "Medium",
+            "explanation": "Your facial analysis reveals a heart-shaped structure — a wide forehead with prominent high cheekbones tapering elegantly to a narrower jawline and defined chin. JCB Lavelle Road's styling directors recommend cuts that visually narrow the forehead, such as a medium-length fringe or textured Caesar. These styles redistribute visual weight downward, creating harmony between the broader upper face and the more delicate lower contours."
         },
         "Diamond": {
             "hairstyles": [
-                {"name": "Chin-Length Classic Bob", "description": "A bob ending right at the chin. Fills in the space around the jaw, balancing the prominent cheekbones and narrow chin."},
-                {"name": "Deep Side-Part with Voluminous Waves", "description": "A dramatic side part with fullness. Draws attention to one side while softening the diamond angles with wavy movement."},
-                {"name": "Soft Curtain Bangs with Layers", "description": "Wispy curtain bangs paired with long layers. Curtain bangs cover part of the narrow forehead, while layers frame the jaw beautifully."}
+                {"name": "Voluminous Brushed-Up Style", "description": "Hair brushed upward and back with strong volume at the crown. This adds width at the top of the head, balancing the narrow forehead against your dramatic cheekbones."},
+                {"name": "Classic Taper with Side Part", "description": "A gentleman's taper cut with a defined side part and slight volume. The structured silhouette adds width at the temples, counterbalancing the cheekbone dominance."},
+                {"name": "Textured Fringe with Fade", "description": "A longer textured fringe falling across the forehead with a mid-fade. The fringe adds visual width to the narrow forehead while the fade keeps the cheekbone area clean."}
             ],
-            "explanation": "Diamond face shapes are defined by a narrow forehead and jawline with dramatic, wide cheekbones. The directors at Warren Tricomi advise choosing hairstyles that add width to the forehead and jaw while keeping the cheekbones clear. Wispy curtain bangs and a chin-length bob or deep side-parted waves will frame your natural elegance."
+            "key_features": "Narrow forehead and jawline with dramatically wide, angular cheekbones. Pointed chin creates a geometric diamond silhouette. The mid-face is the widest point by a significant margin.",
+            "skin_tone": "Medium",
+            "explanation": "Your face presents the rare and striking diamond geometry — narrow forehead and jawline framing dramatically wide cheekbones, with a well-defined pointed chin. BBlunt Premium stylists recommend adding width and volume at the crown to balance the narrow forehead, while keeping the sides neat to avoid emphasizing cheekbone width further. A voluminous brushed-up style or textured fringe will create beautiful proportional harmony."
+        },
+        "Oblong": {
+            "hairstyles": [
+                {"name": "Textured Crop with Heavy Fringe", "description": "A short textured top with a thick, full fringe covering the forehead. The horizontal fringe visually shortens the face length, making your proportions appear more balanced."},
+                {"name": "Side-Swept Medium Length", "description": "Medium-length hair swept to the side with volume at the temples. The lateral volume adds visual width to counterbalance the elongated facial structure."},
+                {"name": "Classic Ivy League", "description": "A timeless Ivy League cut with slightly longer top and neat sides. The moderate length prevents adding further vertical emphasis while keeping the look polished."}
+            ],
+            "key_features": "Face length is significantly greater than width. Forehead, cheekbones, and jawline are of similar width creating a long, rectangular structure. Straight cheek contours with minimal tapering.",
+            "skin_tone": "Medium",
+            "explanation": "Your facial geometry reveals an oblong structure — a face that is notably longer than it is wide, with forehead, cheekbones, and jawline maintaining similar widths. Rossano Ferretti's directors recommend styles that add horizontal volume and visual width. A heavy fringe or side-swept style shortens the perceived face length, while temple volume widens the silhouette for a more balanced, sophisticated appearance."
         }
     }
 
-    data = recommendations_db.get(selected_shape, recommendations_db["Oval"])
+    # ── FEMALE recommendation database ───────────────────────────
+    female_recommendations = {
+        "Oval": {
+            "hairstyles": [
+                {"name": "Sleek Lob with Face-Framing Layers", "description": "A long bob hitting at the collarbone with subtle face-framing layers. These layers highlight your symmetrical oval structure while adding gentle movement around the cheekbones."},
+                {"name": "Soft Wavy Shag with Curtain Bangs", "description": "Textured shaggy waves paired with parted curtain bangs. The curtain effect softly frames your balanced forehead and draws attention to your eyes."},
+                {"name": "Deep Side-Parted Hollywood Waves", "description": "Classic glamour waves with a deep side part. Adds dramatic volume to one side, creating visual interest while celebrating your naturally balanced proportions."}
+            ],
+            "key_features": "Balanced forehead-to-jaw ratio with gently curved jawline. Cheekbones sit proportionally between forehead and chin. Face length approximately 1.5× the width — classic feminine oval.",
+            "skin_tone": "Medium",
+            "explanation": "Your face exhibits the coveted oval geometry — a forehead marginally wider than a softly curved jawline, with cheekbones harmoniously placed. Warren Tricomi's French-trained stylists recommend cuts that celebrate this natural symmetry. A collarbone-length lob with face-framing layers or textured waves with curtain bangs will accentuate your high cheekbones and elegant jawline."
+        },
+        "Round": {
+            "hairstyles": [
+                {"name": "Asymmetrical Long Bob", "description": "An angled lob that is longer in the front than the back. The diagonal line draws the eye downward, creating the illusion of length and introducing angular structure to soften roundness."},
+                {"name": "Voluminous Layered Blowout", "description": "Long layers with crown volume blown out to maximum height. The vertical lift at the crown elongates your face while layers past the chin create a lengthening frame."},
+                {"name": "Sleek Center-Part with Long Layers", "description": "Long, smooth hair with a precise center part and layers starting at the chin. The vertical parting line visually divides and elongates, while chin-level layers add angular framing."}
+            ],
+            "key_features": "Face width and length are nearly equal. Full, rounded cheeks with a soft curved jawline. Rounded chin without angular definition. Cheekbones blend smoothly into the cheek fullness.",
+            "skin_tone": "Medium",
+            "explanation": "Your facial geometry reveals a beautiful round structure — equal face width and length, with full cheeks and a gently curved jawline. Play Salon UB City's creative directors recommend styles that introduce length and angular framing. An asymmetrical lob creates flattering diagonal lines, while a voluminous blowout adds crown height to elongate the silhouette beautifully."
+        },
+        "Square": {
+            "hairstyles": [
+                {"name": "Wispy Layered Shoulder Cut", "description": "Feathery, wispy layers cascading from the collarbone. The soft, irregular texture breaks the sharp horizontal lines of your strong jawline, creating organic, romantic movement."},
+                {"name": "Side-Swept Soft Fringe with Long Waves", "description": "A sweeping side fringe paired with long, loose waves. The diagonal fringe softens the broad forehead while waves add curved texture against your angular jaw."},
+                {"name": "Tousled Beachy Waves with Middle Part", "description": "Natural, textured beach waves with a relaxed center part. The curved wave texture offsets the straight geometric lines of forehead and jaw, creating effortless harmony."}
+            ],
+            "key_features": "Prominent angular jawline with a broad forehead of similar width. Strong chin with defined corners. Forehead, cheekbones, and jaw are roughly equal width creating a powerful square silhouette.",
+            "skin_tone": "Medium",
+            "explanation": "Your face showcases the striking beauty of the square shape — a broad forehead matching the width of a strong, sculpted jawline. Rossano Ferretti's Method Precision experts recommend softening these gorgeous angles with wispy layers and curved wave textures. The side-swept fringe elegantly redirects focus diagonally, while beachy waves add organic movement against your structured bone architecture."
+        },
+        "Heart": {
+            "hairstyles": [
+                {"name": "Chin-Length Textured Bob", "description": "A classic bob ending precisely at the chin. This strategic length adds volume and fullness exactly where your face narrows, balancing the wider forehead with a harmonious lower frame."},
+                {"name": "Side-Swept Wispy Bangs with Long Waves", "description": "Long flowing waves paired with delicate side-swept bangs. The diagonal fringe visually narrows the wider forehead while waves add body around the narrower jawline."},
+                {"name": "Layered Collarbone Shag", "description": "A modern shag with graduated layers concentrated from chin to collarbone. Creates maximum texture and fullness around the narrowest part of your face, achieving beautiful balance."}
+            ],
+            "key_features": "Wide forehead tapering to a narrower jawline and delicate pointed chin. High, prominent cheekbones. The upper face is noticeably wider than the lower face, creating the classic inverted triangle.",
+            "skin_tone": "Medium",
+            "explanation": "Your facial analysis reveals an elegant heart shape — a wide forehead with prominent cheekbones tapering to a delicate pointed chin. JCB Lavelle Road's creative directors recommend adding volume around the jawline to balance this inverted triangle. A chin-length textured bob or layered collarbone shag creates fullness where the face narrows, while side-swept bangs softly reduce the visual width of the forehead."
+        },
+        "Diamond": {
+            "hairstyles": [
+                {"name": "Chin-Length Classic Bob", "description": "A polished bob ending at the chin with slight inward curving. Fills the space around the narrow jawline while the clean horizontal line adds width below your dramatic cheekbones."},
+                {"name": "Deep Side-Part with Voluminous Waves", "description": "A dramatic side part paired with body-rich waves. The side part adds visual width at the narrow forehead, while voluminous waves soften the sharp cheekbone angles."},
+                {"name": "Soft Curtain Bangs with Long Layers", "description": "Wispy parted bangs paired with face-framing long layers. The curtain bangs widen the narrow forehead, while layers at the jaw add needed fullness to the lower face."}
+            ],
+            "key_features": "Narrow forehead and jawline with dramatically wide, angular cheekbones. Pointed chin creates a geometric diamond silhouette. The mid-face cheekbone width dominates the overall structure.",
+            "skin_tone": "Medium",
+            "explanation": "Your face presents the rare and stunning diamond geometry — narrow forehead and jawline framing dramatic, wide cheekbones with a defined pointed chin. Warren Tricomi's directors recommend hairstyles that add width at the forehead and jaw. Curtain bangs elegantly widen the narrow forehead, while a chin-length bob or voluminous waves add fullness around the delicate jawline, framing your natural elegance."
+        },
+        "Oblong": {
+            "hairstyles": [
+                {"name": "Full Blunt Bangs with Medium Layers", "description": "A thick, blunt fringe paired with shoulder-length layers. The horizontal bang line visually shortens your face length while layers add lateral fullness and width."},
+                {"name": "Voluminous Shoulder-Length Waves", "description": "Full, bouncy waves hitting at the shoulders with maximum volume at the sides. The lateral volume adds visual width, counterbalancing the elongated facial structure beautifully."},
+                {"name": "Textured Bob with Side-Swept Bangs", "description": "A chin-length bob with gentle texture and a side-swept fringe. The shorter length prevents adding vertical emphasis, while the fringe shortens the perceived face length."}
+            ],
+            "key_features": "Face length significantly greater than width. Forehead, cheekbones, and jawline are of similar width. Straight, elongated cheek contours. Long appearance from hairline to chin.",
+            "skin_tone": "Medium",
+            "explanation": "Your facial geometry reveals an oblong structure — beautifully elongated with consistent width across forehead, cheekbones, and jawline. BBlunt Premium's styling directors recommend styles that add horizontal volume and visual width. Full blunt bangs create a horizontal break that shortens perceived face length, while voluminous shoulder-length waves add the lateral fullness that frames your elegant elongated proportions."
+        }
+    }
+
+    # Select the right database based on gender
+    rec_db = male_recommendations if selected_gender == "Male" else female_recommendations
+    data = rec_db.get(selected_shape, rec_db["Oval"])
 
     return FaceAnalysisResponse(
         face_shape=selected_shape,
+        detected_gender=selected_gender,
+        key_features=data["key_features"],
+        skin_tone=data["skin_tone"],
+        confidence="High",
         recommended_hairstyles=[
             HairstyleRecommendation(**h) for h in data["hairstyles"]
         ],
