@@ -36,6 +36,7 @@ export default function FaceAnalysisPage() {
   // File states
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [selectedGender, setSelectedGender] = useState("");
 
   // DB context states for booking integration
   const [salons, setSalons] = useState([]);
@@ -47,6 +48,15 @@ export default function FaceAnalysisPage() {
   const [analysis, setAnalysis] = useState(null);
   const [loadingStep, setLoadingStep] = useState(0);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(window.innerWidth < 900);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileOrTablet(window.innerWidth < 900);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Fetch salons and services for booking redirection
   useEffect(() => {
@@ -158,6 +168,9 @@ export default function FaceAnalysisPage() {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      if (selectedGender) {
+        formData.append("gender", selectedGender);
+      }
 
       const res = await fetch(`${API}/api/concierge/analyze-face`, {
         method: "POST",
@@ -218,10 +231,12 @@ export default function FaceAnalysisPage() {
         {/* Header Row */}
         <div style={styles.headerRow}>
           <div>
-            <div style={styles.brandRow}>
-              <span style={styles.brand}>AURA</span>
-              <span style={styles.badge}>Elite</span>
-            </div>
+            {!isMobileOrTablet && (
+              <div style={styles.brandRow}>
+                <span style={styles.brand}>AURA</span>
+                <span style={styles.badge}>Elite</span>
+              </div>
+            )}
             <h1 style={styles.heading}>AI Face Shape Analyzer</h1>
             <p style={styles.sub}>
               Upload a selfie to determine your face shape and receive personalized hairstyle fits.
@@ -230,7 +245,10 @@ export default function FaceAnalysisPage() {
         </div>
 
         {/* Layout Grid */}
-        <div style={styles.grid}>
+        <div style={{
+          ...styles.grid,
+          gridTemplateColumns: isMobileOrTablet ? "1fr" : "1.1fr 1.9fr"
+        }}>
           
           {/* Left Panel: Photo Upload Area */}
           <div style={styles.card}>
@@ -285,6 +303,33 @@ export default function FaceAnalysisPage() {
                     )}
                   </div>
                 )}
+              </div>
+
+              {/* Gender Selector */}
+              <div style={styles.genderSection}>
+                <label style={styles.genderLabel}>Select Gender <span style={{color:"#71717a",fontWeight:400}}>(optional)</span></label>
+                <div style={styles.genderRow}>
+                  {["Male", "Female", "Prefer not to say"].map((g) => {
+                    const val = g === "Prefer not to say" ? "" : g;
+                    const isActive = selectedGender === val;
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setSelectedGender(val)}
+                        style={{
+                          ...styles.genderBtn,
+                          ...(isActive ? styles.genderBtnActive : {}),
+                        }}
+                      >
+                        {g === "Male" && "👨 "}
+                        {g === "Female" && "👩 "}
+                        {g === "Prefer not to say" && "🤷 "}
+                        {g}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={styles.actionRow}>
@@ -364,6 +409,31 @@ export default function FaceAnalysisPage() {
                   <div style={styles.shapeBadgeRow}>
                     <span style={styles.shapeBadge}>{analysis.face_shape}</span>
                   </div>
+
+                  {/* Gender & Confidence Row */}
+                  <div style={styles.metaRow}>
+                    {analysis.detected_gender && analysis.detected_gender !== "Unknown" && (
+                      <span style={styles.metaPill}>
+                        {analysis.detected_gender === "Male" ? "👨" : analysis.detected_gender === "Female" ? "👩" : "🧑"}{" "}
+                        {analysis.detected_gender}
+                      </span>
+                    )}
+                    {analysis.skin_tone && (
+                      <span style={styles.metaPill}>🎨 {analysis.skin_tone}</span>
+                    )}
+                    {analysis.confidence && (
+                      <span style={{
+                        ...styles.metaPill,
+                        ...(analysis.confidence === "High" ? {borderColor: "rgba(74,222,128,0.3)", color: "#4ade80"} :
+                           analysis.confidence === "Medium" ? {borderColor: "rgba(250,204,21,0.3)", color: "#facc15"} :
+                           {borderColor: "rgba(248,113,113,0.3)", color: "#f87171"})
+                      }}>
+                        {analysis.confidence === "High" ? "✅" : analysis.confidence === "Medium" ? "⚠️" : "❓"}{" "}
+                        {analysis.confidence} Confidence
+                      </span>
+                    )}
+                  </div>
+
                   <button
                     onClick={() => handleBookService(analysis.recommended_hairstyles?.[0]?.name)}
                     style={{
@@ -384,6 +454,14 @@ export default function FaceAnalysisPage() {
                     ✨ Find Salons & Book Styles
                   </button>
                 </div>
+
+                {/* Key Features Box */}
+                {analysis.key_features && (
+                  <div style={styles.featuresBox}>
+                    <div style={styles.featuresLabel}>KEY FACIAL LANDMARKS</div>
+                    <p style={styles.featuresText}>{analysis.key_features}</p>
+                  </div>
+                )}
 
                 {/* Stylist Explanation Speech Box */}
                 <div style={styles.explanationBox}>
@@ -917,5 +995,80 @@ const styles = {
     cursor: "pointer",
     transition: "all 0.3s",
     fontFamily: "'Plus Jakarta Sans', sans-serif",
+  },
+  // ── Gender Selector Styles ──────────────────────────
+  genderSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+  },
+  genderLabel: {
+    fontSize: "0.82rem",
+    fontWeight: 700,
+    color: "#a1a1aa",
+    textTransform: "uppercase",
+    letterSpacing: "0.06em",
+  },
+  genderRow: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  genderBtn: {
+    flex: 1,
+    minWidth: 90,
+    background: "#08080a",
+    border: "1px solid #26262b",
+    borderRadius: 8,
+    color: "#71717a",
+    fontSize: "0.8rem",
+    fontWeight: 600,
+    padding: "10px 8px",
+    cursor: "pointer",
+    transition: "all 0.3s",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    textAlign: "center",
+  },
+  genderBtnActive: {
+    borderColor: "#c5a880",
+    color: "#c5a880",
+    background: "rgba(197,168,128,0.08)",
+    boxShadow: "0 0 12px rgba(197,168,128,0.12)",
+  },
+  // ── Result Meta Styles ─────────────────────────────
+  metaRow: {
+    display: "flex",
+    justifyContent: "center",
+    gap: 10,
+    marginTop: 16,
+    flexWrap: "wrap",
+  },
+  metaPill: {
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    color: "#a1a1aa",
+    background: "rgba(255,255,255,0.03)",
+    border: "1px solid #26262b",
+    borderRadius: 20,
+    padding: "5px 14px",
+  },
+  featuresBox: {
+    background: "rgba(197,168,128,0.04)",
+    border: "1px solid rgba(197,168,128,0.15)",
+    borderRadius: 10,
+    padding: 18,
+  },
+  featuresLabel: {
+    fontSize: "0.7rem",
+    fontWeight: 700,
+    color: "#c5a880",
+    letterSpacing: "0.08em",
+    marginBottom: 8,
+  },
+  featuresText: {
+    fontSize: "0.85rem",
+    color: "#a1a1aa",
+    lineHeight: 1.6,
+    margin: 0,
   },
 };

@@ -60,8 +60,12 @@ class ConciergeResponse(BaseModel):
 class FaceAnalysisResponse(BaseModel):
     """Bespoke response returned by the Face Shape Analyzer."""
 
-    face_shape: str = Field(..., description="Detected face shape, e.g. Oval, Round, Square, Heart, Diamond")
-    recommended_hairstyles: List[HairstyleRecommendation] = Field(..., description="Hairstyles recommended for this face shape")
+    face_shape: str = Field(..., description="Detected face shape, e.g. Oval, Round, Square, Heart, Diamond, Oblong")
+    detected_gender: str = Field("Unknown", description="Detected or user-provided gender: Male, Female, or Non-Binary")
+    key_features: str = Field("", description="Description of key facial landmarks analyzed (jawline, forehead, cheekbones)")
+    skin_tone: str = Field("", description="Detected skin tone for future skincare recommendations")
+    confidence: str = Field("High", description="Confidence level of the analysis: High, Medium, or Low")
+    recommended_hairstyles: List[HairstyleRecommendation] = Field(..., description="Hairstyles recommended for this face shape and gender")
     explanation: str = Field(..., description="Personalized explanation from the AI Stylist")
     is_mock: bool = Field(False, description="Indicates if a mock fallback response was used")
 

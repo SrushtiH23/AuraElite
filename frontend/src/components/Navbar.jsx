@@ -45,29 +45,43 @@ export default function Navbar() {
   if (isMobile) {
     // ── MOBILE BOTTOM NAVBAR ──────────────────────────────────────────
     return (
-      <div style={styles.mobileNav}>
-        {navItems.map((item) => {
-          const active = isActive(item.path);
-          return (
-            <button
-              key={item.label}
-              onClick={() => handleNavClick(item.path)}
-              style={{
-                ...styles.mobileBtn,
-                color: active ? "#c5a880" : "#71717a",
-              }}
-              aria-label={item.label}
-            >
-              <span style={styles.mobileIcon}>{item.icon}</span>
-              <span style={{
-                ...styles.mobileLabel,
-                color: active ? "#c5a880" : "#71717a",
-                fontWeight: active ? "700" : "500",
-              }}>{item.label.split(" ")[0]}</span>
-            </button>
-          );
-        })}
-      </div>
+      <>
+        {/* Mobile Header with Logo & Sign Out */}
+        <div style={styles.mobileHeader}>
+          <div style={styles.brand} onClick={() => navigate("/")}>
+            <span style={styles.brandText}>AURA</span>
+            <span style={styles.brandBadge}>Elite</span>
+          </div>
+          <button onClick={logout} style={styles.mobileLogoutBtn} aria-label="Sign Out">
+            Sign Out
+          </button>
+        </div>
+
+        {/* Mobile Bottom Tab Navigation */}
+        <div style={styles.mobileNav}>
+          {navItems.map((item) => {
+            const active = isActive(item.path);
+            return (
+              <button
+                key={item.label}
+                onClick={() => handleNavClick(item.path)}
+                style={{
+                  ...styles.mobileBtn,
+                  color: active ? "#c5a880" : "#71717a",
+                }}
+                aria-label={item.label}
+              >
+                <span style={styles.mobileIcon}>{item.icon}</span>
+                <span style={{
+                  ...styles.mobileLabel,
+                  color: active ? "#c5a880" : "#71717a",
+                  fontWeight: active ? "700" : "500",
+                }}>{item.label.split(" ")[0]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </>
     );
   }
 
@@ -265,5 +279,32 @@ const styles = {
     fontFamily: "'Plus Jakarta Sans', sans-serif",
     textTransform: "uppercase",
     letterSpacing: "0.03em",
+  },
+  mobileHeader: {
+    position: "sticky",
+    top: 0,
+    zIndex: 100,
+    background: "rgba(18, 18, 21, 0.85)",
+    backdropFilter: "blur(12px)",
+    borderBottom: "1px solid #26262b",
+    height: "56px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "0 16px",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+  mobileLogoutBtn: {
+    background: "transparent",
+    border: "1px solid #26262b",
+    borderRadius: "6px",
+    color: "#a1a1aa",
+    fontSize: "0.75rem",
+    fontWeight: 650,
+    padding: "6px 12px",
+    cursor: "pointer",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    transition: "all 0.2s",
   },
 };

@@ -167,7 +167,7 @@ INSTRUCTIONS:
 """
 
     # 5. Call Gemini API
-    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+    api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
     request_body = {
         "contents": [
             {
@@ -527,7 +527,7 @@ CRITICAL REMINDERS:
 4. Analyze the image carefully — pay close attention to facial hair, bone structure, and overall presentation."""
 
         # Call Gemini API
-        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={settings.GEMINI_API_KEY}"
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
         request_body = {
             "contents": [
                 {
@@ -990,7 +990,7 @@ async def analyze_dress(
         """
 
         # Call Gemini API
-        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
+        api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={settings.GEMINI_API_KEY}"
         request_body = {
             "contents": [
                 {

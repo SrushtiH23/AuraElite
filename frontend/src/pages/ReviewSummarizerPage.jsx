@@ -220,10 +220,12 @@ export default function ReviewSummarizerPage() {
         {/* Header */}
         <div style={styles.headerRow}>
           <div>
-            <div style={styles.brandRow}>
-              <span style={styles.brand}>AURA</span>
-              <span style={styles.badge}>Elite</span>
-            </div>
+            {!isMobileOrTablet && (
+              <div style={styles.brandRow}>
+                <span style={styles.brand}>AURA</span>
+                <span style={styles.badge}>Elite</span>
+              </div>
+            )}
             <h1 style={styles.heading}>Review AI Insights</h1>
             <p style={styles.sub}>
               Harness Gemini intelligence to distill customer feedback into key highlights, considerations, and summaries.

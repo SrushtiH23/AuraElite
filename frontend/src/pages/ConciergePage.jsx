@@ -31,6 +31,15 @@ export default function ConciergePage() {
   const [recommendation, setRecommendation] = useState(null);
   const [loadingStep, setLoadingStep] = useState(0);
   const [saveStatus, setSaveStatus] = useState(""); // "", "saving", "saved", "error"
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(window.innerWidth < 900);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileOrTablet(window.innerWidth < 900);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Fetch salons and services on mount to allow exact object matching when booking
   useEffect(() => {
@@ -199,10 +208,12 @@ export default function ConciergePage() {
         {/* Header */}
         <div style={styles.headerRow}>
           <div>
-            <div style={styles.brandRow}>
-              <span style={styles.brand}>AURA</span>
-              <span style={styles.badge}>Elite</span>
-            </div>
+            {!isMobileOrTablet && (
+              <div style={styles.brandRow}>
+                <span style={styles.brand}>AURA</span>
+                <span style={styles.badge}>Elite</span>
+              </div>
+            )}
             <h1 style={styles.heading}>AI Beauty Concierge</h1>
             <p style={styles.sub}>
               State-of-the-art styling advisor matches you with Bangalore's leading master salons.
@@ -211,7 +222,10 @@ export default function ConciergePage() {
         </div>
 
         {/* Layout Grid */}
-        <div style={styles.grid}>
+        <div style={{
+          ...styles.grid,
+          gridTemplateColumns: isMobileOrTablet ? "1fr" : "1.1fr 1.9fr"
+        }}>
           
           {/* Left: Form Panel */}
           <div style={styles.card}>
@@ -383,7 +397,10 @@ export default function ConciergePage() {
                 {/* Recommended Hairstyles */}
                 <div style={styles.section}>
                   <h3 style={styles.sectionHeader}>Bespoke Hairstyles for You</h3>
-                  <div style={styles.hairstylesGrid}>
+                  <div style={{
+                    ...styles.hairstylesGrid,
+                    gridTemplateColumns: isMobileOrTablet ? "1fr" : "1fr 1fr"
+                  }}>
                     {recommendation.recommended_hairstyles.map((hair, i) => (
                       <div key={i} style={styles.hairCard}>
                         <div style={styles.hairBadge}>Style {i + 1}</div>
