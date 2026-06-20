@@ -65,7 +65,7 @@ export default function Login() {
           alignItems: "center",
           gap: "8px"
         }}>
-          <span>✨</span> Personalized styling diagnostics powered by Gemini AI.
+          <span>✨</span> Premium salon booking and beauty consultation.
         </div>
 
         {/* Error Alert */}

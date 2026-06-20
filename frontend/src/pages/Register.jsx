@@ -5,7 +5,7 @@
  * On success, automatically logs the user in and redirects to /.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -20,6 +20,26 @@ export default function Register() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [isOwner, setIsOwner] = useState(false);
+  const [salons, setSalons] = useState([]);
+  const [selectedSalonId, setSelectedSalonId] = useState("");
+
+  const API_BASE = import.meta.env.VITE_API_URL || "https://glowai-kamv.onrender.com";
+
+  useEffect(() => {
+    if (isOwner && salons.length === 0) {
+      fetch(`${API_BASE}/api/salons`)
+        .then((res) => res.json())
+        .then((data) => {
+          setSalons(data);
+          if (data.length > 0) {
+            setSelectedSalonId(data[0].id);
+          }
+        })
+        .catch((err) => console.error("Failed to load salons for owner registration", err));
+    }
+  }, [isOwner]);
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
@@ -29,10 +49,15 @@ export default function Register() {
       return;
     }
 
+    if (isOwner && !selectedSalonId) {
+      setError("Please select a salon to register as owner.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await register(email, password, fullName);
+      await register(email, password, fullName, isOwner ? Number(selectedSalonId) : null);
       navigate("/", { replace: true });
     } catch (err) {
       setError(err.message);
@@ -69,7 +94,7 @@ export default function Register() {
           alignItems: "center",
           gap: "8px"
         }}>
-          <span>✨</span> Personalized styling diagnostics powered by Gemini AI.
+          <span>✨</span> Premium salon booking and beauty consultation.
         </div>
 
         {/* Error Alert */}
@@ -134,6 +159,40 @@ export default function Register() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             style={styles.input}
           />
+
+          {/* Salon Owner Toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "18px" }}>
+            <input
+              id="register-is-owner"
+              type="checkbox"
+              checked={isOwner}
+              onChange={(e) => setIsOwner(e.target.checked)}
+              style={{ width: "18px", height: "18px", accentColor: "#c5a880", cursor: "pointer" }}
+            />
+            <label htmlFor="register-is-owner" style={{ fontSize: "0.85rem", color: "#a1a1aa", fontWeight: 650, cursor: "pointer" }}>
+              I am a Salon Owner / Partner
+            </label>
+          </div>
+
+          {/* Salon Selection Dropdown */}
+          {isOwner && (
+            <div style={{ display: "flex", flexDirection: "column", marginBottom: "18px" }}>
+              <label style={styles.label}>Select Your Salon</label>
+              <select
+                id="register-salon-id"
+                value={selectedSalonId}
+                onChange={(e) => setSelectedSalonId(e.target.value)}
+                style={styles.select}
+                required
+              >
+                {salons.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.area})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Submit */}
           <button
@@ -271,6 +330,19 @@ const styles = {
     outline: "none",
     marginBottom: "18px",
     transition: "border-color 0.3s",
+    boxSizing: "border-box",
+  },
+  select: {
+    width: "100%",
+    background: "#08080a",
+    border: "1px solid #26262b",
+    borderRadius: "6px",
+    padding: "12px 16px",
+    color: "#fcfcfd",
+    fontSize: "0.95rem",
+    fontFamily: "'Plus Jakarta Sans', sans-serif",
+    outline: "none",
+    cursor: "pointer",
     boxSizing: "border-box",
   },
   button: {

@@ -23,12 +23,25 @@ export default function Navbar() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const navItems = [
+  const desktopItems = [
     { label: "Dashboard", path: "/", icon: "🏠" },
+    { label: "Offers", path: "/offers", icon: "🏷️" },
     { label: "Book", path: "/book", icon: "💇‍♂️" },
     { label: "AI Concierge", path: "/concierge", icon: "✨" },
     { label: "Face shape", path: "/face-analysis", icon: "📷" },
     { label: "AI Insights", path: "/reviews", icon: "💬" },
+  ];
+
+  if (user?.salon_id) {
+    desktopItems.push({ label: "Owner Panel", path: "/owner-dashboard", icon: "💼" });
+  }
+
+  const mobileItems = [
+    { label: "Dashboard", path: "/", icon: "🏠" },
+    { label: "Offers", path: "/offers", icon: "🏷️" },
+    { label: "Book", path: "/book", icon: "💇‍♂️" },
+    { label: "AI Concierge", path: "/concierge", icon: "✨" },
+    { label: "Face shape", path: "/face-analysis", icon: "📷" },
   ];
 
   const handleNavClick = (path) => {
@@ -52,14 +65,21 @@ export default function Navbar() {
             <span style={styles.brandText}>AURA</span>
             <span style={styles.brandBadge}>Elite</span>
           </div>
-          <button onClick={logout} style={styles.mobileLogoutBtn} aria-label="Sign Out">
-            Sign Out
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {user?.salon_id && (
+              <button onClick={() => navigate("/owner-dashboard")} style={styles.mobileLogoutBtn}>
+                Portal
+              </button>
+            )}
+            <button onClick={logout} style={styles.mobileLogoutBtn} aria-label="Sign Out">
+              Sign Out
+            </button>
+          </div>
         </div>
 
         {/* Mobile Bottom Tab Navigation */}
         <div style={styles.mobileNav}>
-          {navItems.map((item) => {
+          {mobileItems.map((item) => {
             const active = isActive(item.path);
             return (
               <button
@@ -97,7 +117,7 @@ export default function Navbar() {
 
         {/* Navigation Links */}
         <div style={styles.links}>
-          {navItems.map((item) => {
+          {desktopItems.map((item) => {
             const active = isActive(item.path);
             return (
               <button

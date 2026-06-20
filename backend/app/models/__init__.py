@@ -2,3 +2,4 @@
 from app.models.review import Review
 from app.models.favorite import FavoriteSalon
 from app.models.recommendation import SavedRecommendation
+from app.models.offer import Offer

@@ -21,6 +21,8 @@ import BookingHistoryPage from "./pages/BookingHistoryPage";
 import ConciergePage from "./pages/ConciergePage";
 import FaceAnalysisPage from "./pages/FaceAnalysisPage";
 import ReviewSummarizerPage from "./pages/ReviewSummarizerPage";
+import OffersPage from "./pages/OffersPage";
+import OwnerDashboard from "./pages/OwnerDashboard";
 import Navbar from "./components/Navbar";
 
 // ── Dashboard Layout ─────────────────────────────────────────────
@@ -461,6 +463,22 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ReviewSummarizerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/offers"
+            element={
+              <ProtectedRoute>
+                <OffersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/owner-dashboard"
+            element={
+              <ProtectedRoute>
+                <OwnerDashboard />
               </ProtectedRoute>
             }
           />

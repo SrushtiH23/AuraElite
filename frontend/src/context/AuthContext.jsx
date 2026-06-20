@@ -95,7 +95,7 @@ export function AuthProvider({ children }) {
   /**
    * Register a new account then automatically log in.
    */
-  async function register(email, password, fullName) {
+  async function register(email, password, fullName, salonId = null) {
     const res = await fetch(`${API_BASE}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -103,6 +103,7 @@ export function AuthProvider({ children }) {
         email,
         password,
         full_name: fullName,
+        salon_id: salonId,
       }),
     });
 

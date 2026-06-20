@@ -14,6 +14,7 @@ from pydantic import BaseModel, EmailStr, Field
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
+    salon_id: Optional[int] = None
 
 
 class UserCreate(UserBase):

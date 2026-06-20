@@ -17,11 +17,12 @@ from app.api.endpoints.salons import router as salons_router
 from app.api.endpoints.bookings import router as bookings_router
 from app.api.endpoints.concierge import router as concierge_router
 from app.api.endpoints.reviews import router as reviews_router
+from app.api.endpoints.offers import router as offers_router, unprefixed_router as offers_unprefixed_router
 from app.core.config import settings
 from app.db.session import Base, engine
 
 # Import all models so SQLAlchemy registers them before create_all
-from app.models import user, salon, service, booking, review, favorite, recommendation  # noqa: F401
+from app.models import user, salon, service, booking, review, favorite, recommendation, offer  # noqa: F401
 
 
 # ── Lifespan: create tables on startup ───────────────────────────
@@ -62,6 +63,8 @@ app.include_router(salons_router)
 app.include_router(bookings_router)
 app.include_router(concierge_router)
 app.include_router(reviews_router)
+app.include_router(offers_router)
+app.include_router(offers_unprefixed_router)
 
 
 
