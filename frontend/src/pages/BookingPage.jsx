@@ -707,6 +707,36 @@ export default function BookingPage() {
                                   {s.description?.slice(0, 100)}
                                   {s.description?.length > 100 ? "…" : ""}
                                 </p>
+                                {selectedSalon?.id === s.id && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      goNext();
+                                    }}
+                                    style={{
+                                      background: "linear-gradient(135deg,#8a704c,#c5a880)",
+                                      border: "none",
+                                      borderRadius: "6px",
+                                      color: "#0e0e0e",
+                                      fontFamily: "'Plus Jakarta Sans', sans-serif",
+                                      fontWeight: 700,
+                                      fontSize: "0.8rem",
+                                      textTransform: "uppercase",
+                                      letterSpacing: "0.05em",
+                                      padding: "8px 16px",
+                                      marginTop: "12px",
+                                      width: "100%",
+                                      cursor: "pointer",
+                                      boxShadow: "0 2px 8px rgba(197,168,128,0.25)",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      gap: "4px"
+                                    }}
+                                  >
+                                    Select & Continue →
+                                  </button>
+                                )}
                               </div>
                               {selectedSalon?.id === s.id && (
                                 <div style={pg.checkMark}>✓</div>
@@ -757,6 +787,7 @@ export default function BookingPage() {
                         setSelectedDate("");
                         setSelectedSlot("");
                       }}
+                      onConfirmSalon={goNext}
                     />
                   </div>
                 )}
@@ -983,13 +1014,37 @@ export default function BookingPage() {
 
         {/* ─── FOOTER NAV BUTTONS ───────────────────────────── */}
         <div style={pg.footerRow}>
-          {step > 1 ? (
-            <button onClick={goBack} style={pg.backBtn}>
-              ← Back
-            </button>
-          ) : (
-            <div />
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            {step > 1 ? (
+              <button onClick={goBack} style={pg.backBtn}>
+                ← Back
+              </button>
+            ) : (
+              <div />
+            )}
+            
+            {/* Summary details helper */}
+            {!isMobileOrTablet && (
+              <div style={{ fontSize: "0.85rem", color: "#a1a1aa" }}>
+                {step === 1 && selectedSalon && (
+                  <span>
+                    Selected Salon: <strong style={{ color: "#c5a880" }}>{selectedSalon.name}</strong>
+                  </span>
+                )}
+                {step === 2 && selectedService && (
+                  <span>
+                    Selected Service: <strong style={{ color: "#c5a880" }}>{selectedService.service_name}</strong> ({formatPrice(selectedService.price)})
+                  </span>
+                )}
+                {step === 3 && selectedDate && selectedSlot && (
+                  <span>
+                    Schedule: <strong style={{ color: "#c5a880" }}>{formatDate(selectedDate)}</strong> at <strong style={{ color: "#c5a880" }}>{selectedSlot}</strong>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          
           <button
             onClick={goNext}
             disabled={!canGoNext() || submitting}
@@ -1618,12 +1673,21 @@ const pg = {
 
   /* ── Footer ─────────────────────────────────────────────── */
   footerRow: {
+    position: "fixed",
+    bottom: 0,
+    left: 0,
+    right: 0,
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 32,
-    paddingTop: 20,
+    background: "rgba(12, 12, 15, 0.85)",
+    backdropFilter: "blur(16px)",
+    WebkitBackdropFilter: "blur(16px)",
     borderTop: "1px solid #26262b",
+    padding: "16px 40px",
+    zIndex: 999,
+    boxShadow: "0 -8px 32px rgba(0,0,0,0.6)",
+    boxSizing: "border-box",
   },
   backBtn: {
     background: "transparent",

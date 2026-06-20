@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 
-export default function SalonMap({ salons, selectedSalon, onSelectSalon }) {
+export default function SalonMap({ salons, selectedSalon, onSelectSalon, onConfirmSalon }) {
   const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [useFallback, setUseFallback] = useState(false);
@@ -21,16 +21,20 @@ export default function SalonMap({ salons, selectedSalon, onSelectSalon }) {
 
   // Register select callback globally so the InfoWindow HTML can trigger React state
   useEffect(() => {
-    window.selectSalonFromMap = (id) => {
+    window.selectSalonFromMap = (id, isAlreadySelected) => {
       const salon = salons.find((s) => s.id === id);
-      if (salon && onSelectSalon) {
-        onSelectSalon(salon);
+      if (salon) {
+        if (isAlreadySelected) {
+          if (onConfirmSalon) onConfirmSalon();
+        } else if (onSelectSalon) {
+          onSelectSalon(salon);
+        }
       }
     };
     return () => {
       delete window.selectSalonFromMap;
     };
-  }, [salons, onSelectSalon]);
+  }, [salons, onSelectSalon, onConfirmSalon]);
 
   // Load Google Maps Script
   useEffect(() => {
@@ -217,7 +221,7 @@ export default function SalonMap({ salons, selectedSalon, onSelectSalon }) {
           ">
             Directions
           </a>
-          <button onclick="window.selectSalonFromMap(${salon.id})" style="
+          <button onclick="window.selectSalonFromMap(${salon.id}, ${isSelected})" style="
             flex: 1.2;
             background: linear-gradient(135deg,#8a704c,#c5a880);
             border: none;
@@ -229,7 +233,7 @@ export default function SalonMap({ salons, selectedSalon, onSelectSalon }) {
             cursor: pointer;
             box-shadow: 0 2px 8px rgba(197,168,128,0.15);
           ">
-            ${isSelected ? "Selected ✓" : "Select & Book"}
+            ${isSelected ? "Continue →" : "Select & Book"}
           </button>
         </div>
       </div>
@@ -416,10 +420,16 @@ export default function SalonMap({ salons, selectedSalon, onSelectSalon }) {
                       Directions
                     </a>
                     <button 
-                      onClick={() => onSelectSalon(activeFallbackMarker)}
+                      onClick={() => {
+                        if (selectedSalon?.id === activeFallbackMarker.id) {
+                          if (onConfirmSalon) onConfirmSalon();
+                        } else {
+                          onSelectSalon(activeFallbackMarker);
+                        }
+                      }}
                       style={styles.popupSelectBtn}
                     >
-                      {selectedSalon?.id === activeFallbackMarker.id ? "Selected ✓" : "Select Salon"}
+                      {selectedSalon?.id === activeFallbackMarker.id ? "Continue →" : "Select Salon"}
                     </button>
                   </div>
                 </div>
