@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Aura Salon Finder API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
-    GEMINI_API_KEY: str = ""
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY") or ""
 
     # ── Database ─────────────────────────────────────────────────
     SQLALCHEMY_DATABASE_URL: str = "sqlite:///./aura.db"
