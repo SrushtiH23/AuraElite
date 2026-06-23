@@ -19,7 +19,7 @@ from app.api.endpoints.concierge import router as concierge_router
 from app.api.endpoints.reviews import router as reviews_router
 from app.api.endpoints.offers import router as offers_router, unprefixed_router as offers_unprefixed_router
 from app.core.config import settings
-from app.db.session import Base, engine
+from app.db.session import Base, engine, SessionLocal
 
 # Import all models so SQLAlchemy registers them before create_all
 from app.models import user, salon, service, booking, review, favorite, recommendation, offer  # noqa: F401
@@ -30,8 +30,23 @@ from app.models import user, salon, service, booking, review, favorite, recommen
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Create all database tables when the application starts."""
+    """Create all database tables and auto-seed offers if empty when the application starts."""
     Base.metadata.create_all(bind=engine)
+    
+    db = SessionLocal()
+    try:
+        from app.models.offer import Offer
+        if db.query(Offer).count() == 0:
+            try:
+                from seed_offers import seed_offers
+                seed_offers()
+            except Exception as e:
+                print(f"[ERROR] Failed to auto-seed offers: {e}")
+    except Exception as e:
+        print(f"[ERROR] Database error during lifespan startup: {e}")
+    finally:
+        db.close()
+
     yield
 
 
