@@ -69,10 +69,31 @@ export default function FaceAnalysisPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Fetch salons and services for booking redirection
+  // Fetch salons on mount
   useEffect(() => {
-    fetchSalonsAndServices();
+    fetchSalons();
   }, []);
+
+  // Fetch services for the selected salon when selectedSalonId changes
+  useEffect(() => {
+    if (selectedSalonId) {
+      fetchServicesForSalon(selectedSalonId);
+    } else {
+      setServices([]);
+    }
+  }, [selectedSalonId]);
+
+  async function fetchServicesForSalon(salonId) {
+    try {
+      const res = await fetch(`${API}/api/salons/${salonId}/services`);
+      if (res.ok) {
+        const data = await res.json();
+        setServices(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch services for salon:", err);
+    }
+  }
 
   // Restore selectedFile from base64 previewUrl in sessionStorage
   useEffect(() => {
@@ -97,7 +118,7 @@ export default function FaceAnalysisPage() {
     }
   }, [previewUrl, selectedFile]);
 
-  async function fetchSalonsAndServices() {
+  async function fetchSalons() {
     try {
       const sRes = await fetch(`${API}/api/salons`);
       if (sRes.ok) {
@@ -105,24 +126,17 @@ export default function FaceAnalysisPage() {
         setSalons(salonsList);
         if (salonsList.length > 0) {
           const savedId = sessionStorage.getItem("aura_face_salon_id");
-          if (!savedId) {
+          if (savedId) {
+            setSelectedSalonId(Number(savedId));
+          } else {
             const defaultSalon = salonsList.find((s) => s.name.toLowerCase().includes("rossano") || s.name.toLowerCase().includes("ferretti")) || salonsList[0];
             setSelectedSalonId(defaultSalon.id);
+            sessionStorage.setItem("aura_face_salon_id", String(defaultSalon.id));
           }
         }
-        
-        const servicesList = [];
-        for (const salon of salonsList) {
-          const svcRes = await fetch(`${API}/api/salons/${salon.id}/services`);
-          if (svcRes.ok) {
-            const svcs = await svcRes.json();
-            servicesList.push(...svcs);
-          }
-        }
-        setServices(servicesList);
       }
-    } catch {
-      /* ignore */
+    } catch (err) {
+      console.error("Failed to fetch salons:", err);
     }
   }
 
@@ -264,20 +278,22 @@ export default function FaceAnalysisPage() {
       targetSalon = salons[0];
     }
     
-    // Find matching haircut service or first service in the salon
-    let targetService = services.find(
-      (svc) => svc.salon_id === targetSalon?.id && (svc.service_name.toLowerCase().includes("haircut") || svc.service_name.toLowerCase().includes("precision"))
-    );
-    if (!targetService && services.length > 0 && targetSalon) {
-      targetService = services.find((svc) => svc.salon_id === targetSalon.id);
+    if (services.length === 0) {
+      alert("Salon services are still loading. Please try again in a moment.");
+      return;
     }
-    if (!targetService && targetSalon) {
-      targetService = {
-        salon_id: targetSalon.id,
-        service_name: styleName ? `Bespoke Hairstyle (${styleName})` : "Bespoke Styling Haircut",
-        price: 2500,
-        duration_minutes: 45
-      };
+
+    // Find matching haircut or precision styling service in the selected salon's services
+    let targetService = services.find(
+      (svc) => svc.service_name.toLowerCase().includes("haircut") || svc.service_name.toLowerCase().includes("precision")
+    );
+    // If not found, try to find any hair service
+    if (!targetService) {
+      targetService = services.find((svc) => svc.category.toLowerCase().includes("hair"));
+    }
+    // Fall back to the first available service of the salon
+    if (!targetService && services.length > 0) {
+      targetService = services[0];
     }
 
     if (targetSalon) {

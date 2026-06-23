@@ -1,9 +1,10 @@
-"""
-Application configuration settings.
-Uses Pydantic BaseSettings for environment variable support.
-"""
-
+import os
+from pathlib import Path
 from pydantic_settings import BaseSettings
+
+# Resolve the absolute path to the .env file in the backend directory
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
 
 
 class Settings(BaseSettings):
@@ -34,8 +35,9 @@ class Settings(BaseSettings):
     ]
 
     class Config:
-        env_file = ".env"
+        env_file = ENV_FILE_PATH
         case_sensitive = True
 
 
 settings = Settings()
+
