@@ -28,7 +28,7 @@ class BookingCreate(BaseModel):
         description="Time slot string, e.g. '10:00 AM - 11:00 AM'",
     )
     customer_name: str = Field(..., min_length=1, max_length=255)
-    customer_phone: str = Field(..., min_length=6, max_length=20)
+    customer_phone: str = Field(..., min_length=10, max_length=10)
     notes: Optional[str] = Field(None, max_length=500)
 
     @field_validator("booking_date")
@@ -37,6 +37,14 @@ class BookingCreate(BaseModel):
         if v < date.today():
             raise ValueError("Booking date cannot be in the past.")
         return v
+
+    @field_validator("customer_phone")
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        v_clean = v.strip()
+        if not v_clean.isdigit() or len(v_clean) != 10:
+            raise ValueError("Phone number must be exactly 10 digits.")
+        return v_clean
 
 
 class BookingCancel(BaseModel):

@@ -424,7 +424,10 @@ export default function BookingPage() {
     if (step === 1) return !!selectedSalon;
     if (step === 2) return !!selectedService;
     if (step === 3) return !!selectedDate && !!selectedSlot;
-    if (step === 4) return customerName.trim().length > 0 && customerPhone.trim().length >= 6;
+    if (step === 4) {
+      const isPhoneValid = /^\d{10}$/.test(customerPhone.trim());
+      return customerName.trim().length > 0 && isPhoneValid;
+    }
     return false;
   }
 
@@ -1013,14 +1016,24 @@ export default function BookingPage() {
                 />
               </div>
               <div>
-                <label style={pg.fieldLabel}>Phone Number</label>
+                <label style={pg.fieldLabel}>Phone Number (10 digits)</label>
                 <input
                   type="tel"
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, ""); // Keep only digits
+                    if (val.length <= 10) {
+                      setCustomerPhone(val);
+                    }
+                  }}
+                  placeholder="9876543210"
                   style={pg.input}
                 />
+                {customerPhone && customerPhone.length !== 10 && (
+                  <span style={{ color: "#f87171", fontSize: "0.75rem", marginTop: 4, display: "block" }}>
+                    Phone number must be exactly 10 digits.
+                  </span>
+                )}
               </div>
             </div>
             <div style={{ marginTop: 12 }}>
