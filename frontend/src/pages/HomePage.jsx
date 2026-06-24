@@ -372,6 +372,16 @@ export default function HomePage() {
           .stats-grid {
             grid-template-columns: 1fr;
           }
+          #hero {
+            height: auto !important;
+            min-height: 100vh !important;
+            padding: 120px 0 60px 0 !important;
+            display: flex !important;
+            align-items: center !important;
+          }
+          .hero-container {
+            padding: 0 24px !important;
+          }
           .hero-title {
             font-size: 2.8rem !important;
           }
@@ -396,7 +406,7 @@ export default function HomePage() {
       {/* HERO SECTION */}
       <section id="hero" style={styles.heroSection}>
         <div style={styles.heroOverlay}></div>
-        <div style={styles.heroContainer} className="fade-in">
+        <div style={styles.heroContainer} className="hero-container fade-in">
           <div style={styles.goldBadge} className="fade-in delay-1">
             ✨ Introducing AuraElite Luxury Discovery
           </div>

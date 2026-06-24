@@ -37,7 +37,8 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
     - Returns the created user (without password).
     """
     # Check for existing user
-    existing = db.query(User).filter(User.email == payload.email).first()
+    email_clean = payload.email.strip().lower()
+    existing = db.query(User).filter(User.email == email_clean).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -45,7 +46,7 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
         )
 
     user = User(
-        email=payload.email,
+        email=email_clean,
         hashed_password=get_password_hash(payload.password),
         full_name=payload.full_name,
         salon_id=payload.salon_id,
@@ -75,7 +76,8 @@ def login(
 
     Returns a JWT access token on success, or 401 on failure.
     """
-    user = db.query(User).filter(User.email == form_data.username).first()
+    email_clean = form_data.username.strip().lower()
+    user = db.query(User).filter(User.email == email_clean).first()
 
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(

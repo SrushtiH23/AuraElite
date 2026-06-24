@@ -29,7 +29,8 @@ export default function Login() {
     setSubmitting(true);
 
     try {
-      await login(email, password);
+      const cleanedEmail = email.trim().toLowerCase();
+      await login(cleanedEmail, password);
       navigate(from, { replace: true });
     } catch (err) {
       setError(err.message);

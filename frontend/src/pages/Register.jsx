@@ -32,7 +32,8 @@ export default function Register() {
     setSubmitting(true);
 
     try {
-      await register(email, password, fullName, null);
+      const cleanedEmail = email.trim().toLowerCase();
+      await register(cleanedEmail, password, fullName, null);
       navigate("/dashboard", { replace: true });
     } catch (err) {
       setError(err.message);
